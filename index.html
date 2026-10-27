@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ORBIT LIVE – Professionelle Satellitenkarte</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --glass: rgba(18, 24, 38, 0.72);
+    --glass-border: rgba(0, 212, 255, 0.18);
+    --cyan: #00d4ff;
+    --cyan-dim: rgba(0, 212, 255, 0.35);
+    --text: #e8f0f8;
+    --text-dim: #8a9bb0;
+    --danger: #ff5c7a;
+    --success: #3dd68c;
+    --radius: 14px;
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+  }
+
+  #map {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: #0a0e14;
+  }
+
+  /* Glass panels */
+  .panel {
+    background: var(--glass);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  /* Top-left: Logo + Search */
+  #top-left {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(360px, calc(100vw - 32px));
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+  }
+
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #00d4ff, #0088cc);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    color: #001018;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+  }
+
+  .logo-text span {
+    color: var(--cyan);
+    font-weight: 400;
+    font-size: 12px;
+    margin-left: 6px;
+  }
+
+  .search-box {
+    position: relative;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 12px 44px 12px 16px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px var(--cyan-dim);
+  }
+
+  .search-input::placeholder { color: var(--text-dim); }
+
+  .search-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--cyan);
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .search-btn:hover { background: rgba(0, 212, 255, 0.12); }
+
+  #suggestions {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    max-height: 280px;
+    overflow-y: auto;
+    display: none;
+    z-index: 1100;
+  }
+
+  .suggestion-item {
+    padding: 11px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.15s;
+  }
+
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:hover { background: rgba(0, 212, 255, 0.12); }
+  .suggestion-item .name { font-weight: 500; }
+  .suggestion-item .meta { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Left panel: Layers */
+  #left-panel {
+    position: absolute;
+    top: 120px;
+    left: 16px;
+    z-index: 1000;
+    width: 260px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+  }
+
+  #left-panel.collapsed {
+    transform: translateX(-110%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+
+  .panel-body { padding: 10px; }
+
+  .layer-group { margin-bottom: 14px; }
+  .layer-group-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    padding-left: 4px;
+  }
+
+  .layer-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+  }
+
+  .layer-item:hover { background: rgba(0, 212, 255, 0.08); }
+  .layer-item.active { background: rgba(0, 212, 255, 0.14); }
+
+  .layer-radio, .layer-check {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--cyan);
+    cursor: pointer;
+  }
+
+  .layer-label { flex: 1; font-size: 13px; }
+
+  /* Top-right: Live status */
+  #top-right {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .status-card {
+    padding: 10px 14px;
+    min-width: 180px;
+    text-align: right;
+  }
+
+  .status-title {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 4px;
+  }
+
+  .status-value {
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .status-value.temp { color: var(--cyan); }
+  .status-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Bottom-left: Coords + Zoom + Attribution */
+  #bottom-left {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: min(420px, calc(100vw - 120px));
+  }
+
+  .coords-bar {
+    display: flex;
+    gap: 14px;
+    padding: 9px 14px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    align-items: center;
+  }
+
+  .coords-bar span { color: var(--text-dim); }
+  .coords-bar strong { color: var(--text); font-weight: 500; }
+
+  .attr-bar {
+    padding: 7px 12px;
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  .attr-bar a { color: var(--cyan); text-decoration: none; }
+  .attr-bar a:hover { text-decoration: underline; }
+
+  /* Bottom-right: Controls */
+  #bottom-right {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .ctrl-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ctrl-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    backdrop-filter: blur(16px);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    font-size: 18px;
+  }
+
+  .ctrl-btn:hover {
+    background: rgba(0, 212, 255, 0.15);
+    border-color: var(--cyan);
+  }
+
+  .ctrl-btn:active { transform: scale(0.94); }
+  .ctrl-btn.active {
+    background: rgba(0, 212, 255, 0.22);
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+
+  .compass-btn {
+    position: relative;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .compass-needle {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 2px;
+    height: 10px;
+    background: var(--danger);
+    transform-origin: bottom center;
+    transform: translateX(-50%);
+    border-radius: 1px;
+  }
+
+  /* Toggle left panel button */
+  #toggle-layers {
+    position: absolute;
+    top: 120px;
+    left: 16px;
+    z-index: 1001;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    backdrop-filter: blur(16px);
+    color: var(--text);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  /* Measure info */
+  #measure-info {
+    position: absolute;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    padding: 10px 18px;
+    display: none;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* Toast */
+  #toast {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    z-index: 2000;
+    padding: 12px 20px;
+    background: rgba(20, 28, 42, 0.95);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+    max-width: 90vw;
+    text-align: center;
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  #toast.error { border-color: var(--danger); }
+  #toast.success { border-color: var(--success); }
+
+  /* Settings modal */
+  #settings-modal {
+    position: absolute;
+    inset: 0;
+    z-index: 3000;
+    background: rgba(0, 0, 0, 0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  #settings-modal.open { display: flex; }
+
+  .modal-content {
+    width: min(400px, 100%);
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .modal-header h2 { font-size: 16px; font-weight: 600; }
+
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 20px;
+  }
+
+  .close-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+  .modal-body { padding: 16px 18px; }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .setting-row:last-child { border-bottom: none; }
+
+  .btn-text {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: var(--text);
+    padding: 7px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.15s;
+  }
+
+  .btn-text:hover { background: rgba(0, 212, 255, 0.12); border-color: var(--cyan); }
+
+  .btn-danger {
+    border-color: rgba(255, 92, 122, 0.4);
+    color: var(--danger);
+  }
+
+  .btn-danger:hover { background: rgba(255, 92, 122, 0.12); }
+
+  /* Leaflet overrides */
+  .leaflet-control-attribution {
+    display: none !important;
+  }
+
+  .leaflet-container {
+    background: #0a0e14;
+    font: inherit;
+  }
+
+  .custom-marker {
+    background: var(--cyan);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    width: 14px !important;
+    height: 14px !important;
+    margin-left: -7px !important;
+    margin-top: -7px !important;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
+  }
+
+  .measure-line {
+    stroke: var(--cyan);
+    stroke-width: 3;
+    stroke-opacity: 0.85;
+  }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    #left-panel {
+      top: auto;
+      bottom: 90px;
+      left: 12px;
+      right: 12px;
+      width: auto;
+      max-height: 45vh;
+    }
+    #left-panel.collapsed {
+      transform: translateY(120%);
+    }
+    #toggle-layers {
+      display: flex;
+      top: auto;
+      bottom: 90px;
+      left: 12px;
+    }
+    #top-left { width: calc(100vw - 32px); }
+    #top-right { top: 12px; right: 12px; }
+    .status-card { min-width: 140px; padding: 8px 12px; }
+    #bottom-left { bottom: 12px; left: 12px; }
+    #bottom-right { bottom: 12px; right: 12px; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.25); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Top Left -->
+<div id="top-left">
+  <div class="panel logo-row">
+    <div class="logo-mark">OL</div>
+    <div class="logo-text">ORBIT LIVE <span>Satellitenkarte</span></div>
+  </div>
+  <div class="search-box">
+    <input type="text" class="search-input" id="search-input" placeholder="Ort, Stadt oder Koordinaten suchen…" autocomplete="off">
+    <button class="search-btn" id="search-btn" title="Suchen">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
+    <div id="suggestions" class="panel"></div>
+  </div>
+</div>
+
+<!-- Left Panel -->
+<div id="left-panel" class="panel">
+  <div class="panel-header">
+    <span>Kartenebenen</span>
+    <button class="close-btn" id="close-layers" style="font-size:18px">×</button>
+  </div>
+  <div class="panel-body">
+    <div class="layer-group">
+      <div class="layer-group-title">Basiskarte</div>
+      <label class="layer-item active" data-base="satellite">
+        <input type="radio" name="base" class="layer-radio" value="satellite" checked>
+        <span class="layer-label">Satellit</span>
+      </label>
+      <label class="layer-item" data-base="streets">
+        <input type="radio" name="base" class="layer-radio" value="streets">
+        <span class="layer-label">Straßenkarte</span>
+      </label>
+      <label class="layer-item" data-base="terrain">
+        <input type="radio" name="base" class="layer-radio" value="terrain">
+        <span class="layer-label">Gelände</span>
+      </label>
+    </div>
+    <div class="layer-group">
+      <div class="layer-group-title">Overlays</div>
+      <label class="layer-item" data-overlay="rain">
+        <input type="checkbox" class="layer-check" id="overlay-rain">
+        <span class="layer-label">Niederschlag (Radar)</span>
+      </label>
+    </div>
+    <div class="layer-group">
+      <div class="layer-group-title">Werkzeuge</div>
+      <label class="layer-item" id="tool-measure">
+        <input type="checkbox" class="layer-check" id="check-measure">
+        <span class="layer-label">Messmodus</span>
+      </label>
+      <label class="layer-item" id="tool-markers">
+        <input type="checkbox" class="layer-check" id="check-markers" checked>
+        <span class="layer-label">Marker setzen</span>
+      </label>
+    </div>
+  </div>
+</div>
+
+<button id="toggle-layers" class="ctrl-btn" title="Ebenen">☰</button>
+
+<!-- Top Right -->
+<div id="top-right">
+  <div class="panel status-card" id="weather-card">
+    <div class="status-title">Wetter am Kartenmittelpunkt</div>
+    <div class="status-value temp" id="weather-temp">–</div>
+    <div class="status-sub" id="weather-extra">Lade…</div>
+  </div>
+  <div class="panel status-card" style="min-width:auto; padding:8px 12px;">
+    <div class="status-title">Status</div>
+    <div class="status-value" id="status-text" style="font-size:13px;">Bereit</div>
+  </div>
+</div>
+
+<!-- Bottom Left -->
+<div id="bottom-left">
+  <div class="panel coords-bar">
+    <div><span>Lat</span> <strong id="lat-val">–</strong></div>
+    <div><span>Lon</span> <strong id="lon-val">–</strong></div>
+    <div><span>Zoom</span> <strong id="zoom-val">–</strong></div>
+  </div>
+  <div class="panel attr-bar" id="attribution">
+    Karten: Esri, OpenStreetMap, OpenTopoMap · Wetter: Open-Meteo · Radar: RainViewer · Geocoding: Nominatim
+  </div>
+</div>
+
+<!-- Bottom Right -->
+<div id="bottom-right">
+  <div class="ctrl-group">
+    <button class="ctrl-btn" id="btn-settings" title="Einstellungen">⚙</button>
+    <button class="ctrl-btn" id="btn-fullscreen" title="Vollbild">⛶</button>
+    <button class="ctrl-btn compass-btn" id="btn-compass" title="Norden">
+      <div class="compass-needle"></div>
+      N
+    </button>
+    <button class="ctrl-btn" id="btn-locate" title="Mein Standort">⌖</button>
+  </div>
+  <div class="ctrl-group">
+    <button class="ctrl-btn" id="btn-zoom-in" title="Heranzoomen">+</button>
+    <button class="ctrl-btn" id="btn-zoom-out" title="Herauszoomen">−</button>
+  </div>
+</div>
+
+<!-- Measure info -->
+<div id="measure-info" class="panel">Messmodus aktiv – Punkte setzen. Doppelklick beendet.</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Settings Modal -->
+<div id="settings-modal">
+  <div class="panel modal-content">
+    <div class="modal-header">
+      <h2>Einstellungen</h2>
+      <button class="close-btn" id="close-settings">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="setting-row">
+        <span>Alle Marker entfernen</span>
+        <button class="btn-text btn-danger" id="clear-markers">Löschen</button>
+      </div>
+      <div class="setting-row">
+        <span>Messung zurücksetzen</span>
+        <button class="btn-text" id="clear-measure">Zurücksetzen</button>
+      </div>
+      <div class="setting-row">
+        <span>Messmodus</span>
+        <button class="btn-text" id="toggle-measure-modal">Ein / Aus</button>
+      </div>
+      <div class="setting-row">
+        <span>Marker setzen</span>
+        <button class="btn-text" id="toggle-markers-modal">Ein / Aus</button>
+      </div>
+      <div style="margin-top:18px; font-size:12px; color:var(--text-dim); line-height:1.5;">
+        <strong>Hinweis:</strong> Satellitenbilder sind keine Echtzeitaufnahmen. Sie stammen von Esri World Imagery und können Tage bis Monate alt sein.<br><br>
+        Datenquellen: Esri, © OpenStreetMap contributors, OpenTopoMap, Open-Meteo, RainViewer, Nominatim.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ========== Map Init ==========
+  const map = L.map('map', {
+    center: [51.16, 10.45],
+    zoom: 6,
+    zoomControl: false,
+    attributionControl: false,
+    preferCanvas: true
+  });
+
+  // ========== Base Layers ==========
+  const baseLayers = {
+    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Tiles © Esri'
+    }),
+    streets: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }),
+    terrain: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      maxZoom: 17,
+      attribution: '© OpenTopoMap'
+    })
+  };
+
+  let currentBase = 'satellite';
+  baseLayers.satellite.addTo(map);
+
+  // ========== Rain Overlay (RainViewer) ==========
+  let rainLayer = null;
+  let rainTimestamps = [];
+  let currentRainIdx = 0;
+
+  async function loadRainTimestamps() {
+    try {
+      const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+      if (!res.ok) throw new Error('RainViewer nicht erreichbar');
+      const data = await res.json();
+      rainTimestamps = (data.radar && data.radar.past) ? data.radar.past : [];
+      if (rainTimestamps.length === 0) throw new Error('Keine Radar-Daten');
+      currentRainIdx = rainTimestamps.length - 1;
+      return true;
+    } catch (e) {
+      console.warn(e);
+      return false;
+    }
+  }
+
+  function setRainLayer() {
+    if (rainLayer) {
+      map.removeLayer(rainLayer);
+      rainLayer = null;
+    }
+    if (rainTimestamps.length === 0) return;
+    const ts = rainTimestamps[currentRainIdx].path;
+    rainLayer = L.tileLayer(`https://tilecache.rainviewer.com${ts}/256/{z}/{x}/{y}/2/1_1.png`, {
+      opacity: 0.55,
+      maxZoom: 12,
+      zIndex: 10
+    });
+    rainLayer.addTo(map);
+  }
+
+  // ========== State ==========
+  let markers = [];
+  let measureMode = false;
+  let markerMode = true;
+  let measurePoints = [];
+  let measureLine = null;
+  let measureMarkers = [];
+  let weatherTimer = null;
+  let searchTimeout = null;
+  let lastWeatherCenter = null;
+
+  // ========== UI Elements ==========
+  const el = {
+    lat: document.getElementById('lat-val'),
+    lon: document.getElementById('lon-val'),
+    zoom: document.getElementById('zoom-val'),
+    weatherTemp: document.getElementById('weather-temp'),
+    weatherExtra: document.getElementById('weather-extra'),
+    status: document.getElementById('status-text'),
+    searchInput: document.getElementById('search-input'),
+    suggestions: document.getElementById('suggestions'),
+    measureInfo: document.getElementById('measure-info'),
+    toast: document.getElementById('toast'),
+    leftPanel: document.getElementById('left-panel'),
+    settingsModal: document.getElementById('settings-modal')
+  };
+
+  // ========== Helpers ==========
+  function showToast(msg, type = '') {
+    el.toast.textContent = msg;
+    el.toast.className = type ? `show ${type}` : 'show';
+    setTimeout(() => el.toast.className = '', 3200);
+  }
+
+  function updateCoords() {
+    const c = map.getCenter();
+    el.lat.textContent = c.lat.toFixed(5);
+    el.lon.textContent = c.lng.toFixed(5);
+    el.zoom.textContent = map.getZoom();
+  }
+
+  function setStatus(txt) {
+    el.status.textContent = txt;
+  }
+
+  // ========== Weather (Open-Meteo) ==========
+  async function fetchWeather() {
+    const c = map.getCenter();
+    // Avoid unnecessary requests when barely moved
+    if (lastWeatherCenter &&
+        Math.abs(lastWeatherCenter.lat - c.lat) < 0.08 &&
+        Math.abs(lastWeatherCenter.lng - c.lng) < 0.08) {
+      return;
+    }
+    lastWeatherCenter = { lat: c.lat, lng: c.lng };
+
+    try {
+      setStatus('Wetter lädt…');
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${c.lat.toFixed(4)}&longitude=${c.lng.toFixed(4)}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&wind_speed_unit=kmh&timezone=auto`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Open-Meteo Fehler');
+      const data = await res.json();
+      const cur = data.current;
+      if (!cur) throw new Error('Keine Daten');
+
+      el.weatherTemp.textContent = `${Math.round(cur.temperature_2m)} °C`;
+      el.weatherExtra.textContent = `Wind ${Math.round(cur.wind_speed_10m)} km/h · Luftfeuchte ${cur.relative_humidity_2m} %`;
+      setStatus('Bereit');
+    } catch (e) {
+      el.weatherTemp.textContent = '–';
+      el.weatherExtra.textContent = 'Wetter nicht verfügbar';
+      setStatus('Wetter offline');
+    }
+  }
+
+  function scheduleWeather() {
+    clearTimeout(weatherTimer);
+    weatherTimer = setTimeout(fetchWeather, 600);
+  }
+
+  // ========== Base Layer Switch ==========
+  document.querySelectorAll('input[name="base"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const val = radio.value;
+      if (baseLayers[currentBase]) map.removeLayer(baseLayers[currentBase]);
+      currentBase = val;
+      baseLayers[val].addTo(map);
+      document.querySelectorAll('.layer-item[data-base]').forEach(item => {
+        item.classList.toggle('active', item.dataset.base === val);
+      });
+      updateAttribution();
+    });
+  });
+
+  // ========== Overlay Rain ==========
+  document.getElementById('overlay-rain').addEventListener('change', async (e) => {
+    if (e.target.checked) {
+      setStatus('Radar lädt…');
+      const ok = await loadRainTimestamps();
+      if (ok) {
+        setRainLayer();
+        setStatus('Radar aktiv');
+        showToast('Niederschlagsradar geladen', 'success');
+      } else {
+        e.target.checked = false;
+        showToast('Radar-Daten derzeit nicht verfügbar', 'error');
+        setStatus('Bereit');
+      }
+    } else {
+      if (rainLayer) {
+        map.removeLayer(rainLayer);
+        rainLayer = null;
+      }
+      setStatus('Bereit');
+    }
+  });
+
+  // ========== Search (Nominatim + Debounce) ==========
+  function debounceSearch() {
+    clearTimeout(searchTimeout);
+    const q = el.searchInput.value.trim();
+    if (q.length < 2) {
+      el.suggestions.style.display = 'none';
+      return;
+    }
+    searchTimeout = setTimeout(() => doSearch(q), 450);
+  }
+
+  async function doSearch(q) {
+    // Coordinate check: "lat, lon" or "lat lon"
+    const coordMatch = q.match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lon = parseFloat(coordMatch[2]);
+      if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+        map.setView([lat, lon], Math.max(map.getZoom(), 12));
+        el.suggestions.style.display = 'none';
+        showToast(`Koordinaten: ${lat.toFixed(5)}, ${lon.toFixed(5)}`, 'success');
+        return;
+      }
+    }
+
+    try {
+      setStatus('Suche…');
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6&addressdetails=1`;
+      const res = await fetch(url, {
+        headers: { 'Accept-Language': 'de' }
+      });
+      if (!res.ok) throw new Error('Nominatim Fehler');
+      const results = await res.json();
+      renderSuggestions(results);
+      setStatus('Bereit');
+    } catch (e) {
+      el.suggestions.innerHTML = '<div class="suggestion-item">Suche fehlgeschlagen</div>';
+      el.suggestions.style.display = 'block';
+      setStatus('Suche offline');
+    }
+  }
+
+  function renderSuggestions(results) {
+    if (!results || results.length === 0) {
+      el.suggestions.innerHTML = '<div class="suggestion-item">Keine Ergebnisse</div>';
+      el.suggestions.style.display = 'block';
+      return;
+    }
+    el.suggestions.innerHTML = results.map(r => {
+      const name = r.display_name.split(',')[0];
+      const meta = r.display_name;
+      return `<div class="suggestion-item" data-lat="${r.lat}" data-lon="${r.lon}">
+        <div class="name">${escapeHtml(name)}</div>
+        <div class="meta">${escapeHtml(meta)}</div>
+      </div>`;
+    }).join('');
+    el.suggestions.style.display = 'block';
+
+    el.suggestions.querySelectorAll('.suggestion-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const lat = parseFloat(item.dataset.lat);
+        const lon = parseFloat(item.dataset.lon);
+        map.setView([lat, lon], 13);
+        el.suggestions.style.display = 'none';
+        el.searchInput.value = item.querySelector('.name').textContent;
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  el.searchInput.addEventListener('input', debounceSearch);
+  el.searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      clearTimeout(searchTimeout);
+      doSearch(el.searchInput.value.trim());
+    }
+  });
+  document.getElementById('search-btn').addEventListener('click', () => {
+    clearTimeout(searchTimeout);
+    doSearch(el.searchInput.value.trim());
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-box')) {
+      el.suggestions.style.display = 'none';
+    }
+  });
+
+  // ========== Markers ==========
+  function addMarker(latlng) {
+    const m = L.marker(latlng, {
+      icon: L.divIcon({ className: 'custom-marker', iconSize: [14, 14] })
+    }).addTo(map);
+    m.bindPopup(`
+      <div style="font-size:13px; min-width:140px;">
+        <strong>Marker</strong><br>
+        ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}<br>
+        <button onclick="window._removeMarker(${markers.length})" style="margin-top:8px;padding:5px 10px;border:none;background:#ff5c7a;color:#fff;border-radius:6px;cursor:pointer;font-size:12px;">Entfernen</button>
+      </div>
+    `);
+    markers.push(m);
+  }
+
+  window._removeMarker = function (idx) {
+    if (markers[idx]) {
+      map.removeLayer(markers[idx]);
+      markers[idx] = null;
+    }
+  };
+
+  document.getElementById('check-markers').addEventListener('change', (e) => {
+    markerMode = e.target.checked;
+  });
+
+  // ========== Measure Tool ==========
+  function clearMeasure() {
+    measurePoints = [];
+    if (measureLine) {
+      map.removeLayer(measureLine);
+      measureLine = null;
+    }
+    measureMarkers.forEach(m => map.removeLayer(m));
+    measureMarkers = [];
+    el.measureInfo.style.display = 'none';
+  }
+
+  function updateMeasureLine() {
+    if (measureLine) map.removeLayer(measureLine);
+    if (measurePoints.length < 2) return;
+
+    measureLine = L.polyline(measurePoints, {
+      color: '#00d4ff',
+      weight: 3,
+      opacity: 0.85,
+      dashArray: '8 6'
+    }).addTo(map);
+
+    let total = 0;
+    for (let i = 1; i < measurePoints.length; i++) {
+      total += measurePoints[i - 1].distanceTo(measurePoints[i]);
+    }
+    const km = (total / 1000).toFixed(2);
+    const m = Math.round(total);
+    el.measureInfo.textContent = `Distanz: ${km} km (${m} m) · ${measurePoints.length} Punkte`;
+    el.measureInfo.style.display = 'block';
+  }
+
+  document.getElementById('check-measure').addEventListener('change', (e) => {
+    measureMode = e.target.checked;
+    if (measureMode) {
+      el.measureInfo.style.display = 'block';
+      el.measureInfo.textContent = 'Messmodus aktiv – Punkte setzen. Doppelklick beendet.';
+      map.getContainer().style.cursor = 'crosshair';
+      showToast('Messmodus aktiviert');
+    } else {
+      clearMeasure();
+      map.getContainer().style.cursor = '';
+    }
+  });
+
+  // ========== Map Click ==========
+  map.on('click', (e) => {
+    if (measureMode) {
+      measurePoints.push(e.latlng);
+      const mm = L.circleMarker(e.latlng, {
+        radius: 5,
+        color: '#00d4ff',
+        fillColor: '#00d4ff',
+        fillOpacity: 1,
+        weight: 2
+      }).addTo(map);
+      measureMarkers.push(mm);
+      updateMeasureLine();
+    } else if (markerMode) {
+      addMarker(e.latlng);
+    }
+  });
+
+  map.on('dblclick', (e) => {
+    if (measureMode && measurePoints.length > 0) {
+      L.DomEvent.stopPropagation(e);
+      measureMode = false;
+      document.getElementById('check-measure').checked = false;
+      map.getContainer().style.cursor = '';
+      showToast('Messung abgeschlossen', 'success');
+    }
+  });
+
+  // ========== Locate ==========
+  document.getElementById('btn-locate').addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      showToast('Geolocation wird nicht unterstützt', 'error');
+      return;
+    }
+    setStatus('Standort…');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        map.setView([latitude, longitude], 14);
+        L.circleMarker([latitude, longitude], {
+          radius: 8,
+          color: '#3dd68c',
+          fillColor: '#3dd68c',
+          fillOpacity: 0.7,
+          weight: 2
+        }).addTo(map).bindPopup('Ihr Standort').openPopup();
+        setStatus('Bereit');
+        showToast('Standort gefunden', 'success');
+      },
+      (err) => {
+        setStatus('Bereit');
+        let msg = 'Standort konnte nicht ermittelt werden';
+        if (err.code === 1) msg = 'Standortzugriff verweigert';
+        showToast(msg, 'error');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+
+  // ========== Zoom / Fullscreen / Compass ==========
+  document.getElementById('btn-zoom-in').addEventListener('click', () => map.zoomIn());
+  document.getElementById('btn-zoom-out').addEventListener('click', () => map.zoomOut());
+
+  document.getElementById('btn-fullscreen').addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => showToast('Vollbild nicht möglich', 'error'));
+    } else {
+      document.exitFullscreen();
+    }
+  });
+
+  document.getElementById('btn-compass').addEventListener('click', () => {
+    map.setBearing ? map.setBearing(0) : map.setView(map.getCenter(), map.getZoom());
+    showToast('Karte nach Norden ausgerichtet');
+  });
+
+  // ========== Left Panel Toggle ==========
+  document.getElementById('close-layers').addEventListener('click', () => {
+    el.leftPanel.classList.add('collapsed');
+    document.getElementById('toggle-layers').style.display = 'flex';
+  });
+  document.getElementById('toggle-layers').addEventListener('click', () => {
+    el.leftPanel.classList.remove('collapsed');
+    document.getElementById('toggle-layers').style.display = 'none';
+  });
+
+  // ========== Settings ==========
+  document.getElementById('btn-settings').addEventListener('click', () => {
+    el.settingsModal.classList.add('open');
+  });
+  document.getElementById('close-settings').addEventListener('click', () => {
+    el.settingsModal.classList.remove('open');
+  });
+  el.settingsModal.addEventListener('click', (e) => {
+    if (e.target === el.settingsModal) el.settingsModal.classList.remove('open');
+  });
+
+  document.getElementById('clear-markers').addEventListener('click', () => {
+    markers.forEach(m => m && map.removeLayer(m));
+    markers = [];
+    showToast('Alle Marker entfernt');
+  });
+  document.getElementById('clear-measure').addEventListener('click', clearMeasure);
+  document.getElementById('toggle-measure-modal').addEventListener('click', () => {
+    document.getElementById('check-measure').click();
+  });
+  document.getElementById('toggle-markers-modal').addEventListener('click', () => {
+    document.getElementById('check-markers').click();
+  });
+
+  // ========== Attribution ==========
+  function updateAttribution() {
+    const parts = [];
+    if (currentBase === 'satellite') parts.push('Esri World Imagery');
+    if (currentBase === 'streets') parts.push('© OpenStreetMap contributors');
+    if (currentBase === 'terrain') parts.push('© OpenTopoMap (CC-BY-SA)');
+    parts.push('Wetter: Open-Meteo');
+    parts.push('Radar: RainViewer');
+    parts.push('Geocoding: Nominatim');
+    document.getElementById('attribution').innerHTML = parts.join(' · ');
+  }
+
+  // ========== Map Events ==========
+  map.on('move', updateCoords);
+  map.on('zoom', updateCoords);
+  map.on('moveend', scheduleWeather);
+  map.on('zoomend', scheduleWeather);
+
+  // Initial
+  updateCoords();
+  fetchWeather();
+  updateAttribution();
+
+  // Responsive panel start state
+  if (window.innerWidth <= 700) {
+    el.leftPanel.classList.add('collapsed');
+    document.getElementById('toggle-layers').style.display = 'flex';
+  }
+
+})();
+</script>
+</body>
+</html>

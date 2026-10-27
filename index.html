@@ -3,241 +3,191 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ORBIT LIVE — Advanced Satellite Tracker</title>
-
+<title>ORBIT LIVE — Satellite Tracker</title>
 <script src="https://cesium.com/downloads/cesiumjs/releases/1.124/Build/Cesium/Cesium.js"></script>
 <link href="https://cesium.com/downloads/cesiumjs/releases/1.124/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
-
 <style>
 :root {
-  --bg: #01040a;
-  --panel: rgba(6,11,22,0.88);
-  --panel2: rgba(8,14,28,0.96);
-  --border: rgba(0,190,255,0.17);
-  --cyan: #00beff;
-  --cyan-dim: rgba(0,190,255,0.14);
-  --text: #eef4ff;
-  --muted: #7a8aa3;
-  --red: #ff4b6a;
-  --green: #2ce59b;
-  --radius: 13px;
+  --bg: #02050c;
+  --panel: rgba(8,14,28,0.88);
+  --border: rgba(0,190,255,0.18);
+  --cyan: #00c2ff;
+  --cyan-dim: rgba(0,194,255,0.14);
+  --text: #eef5ff;
+  --muted: #7d8da8;
+  --red: #ff4d6d;
+  --radius: 14px;
 }
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13.5px; }
-
 #cesiumContainer { position: absolute; inset: 0; }
-
-.cesium-viewer-bottom,
-.cesium-viewer-toolbar,
-.cesium-viewer-animationContainer,
-.cesium-viewer-timelineContainer,
-.cesium-viewer-fullscreenContainer,
-.cesium-credit-logoContainer,
-.cesium-credit-textContainer { display: none !important; }
+.cesium-viewer-bottom, .cesium-viewer-toolbar, .cesium-viewer-animationContainer,
+.cesium-viewer-timelineContainer, .cesium-viewer-fullscreenContainer,
+.cesium-credit-logoContainer, .cesium-credit-textContainer { display: none !important; }
 
 .glass {
   background: var(--panel);
-  backdrop-filter: blur(26px) saturate(170%);
-  -webkit-backdrop-filter: blur(26px) saturate(170%);
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 18px 50px rgba(0,0,0,0.55);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
 }
-
 body.ui-hidden .ui { display: none !important; }
 
-#topLeft {
-  position: absolute; top: 14px; left: 14px; z-index: 20;
-  width: min(370px, calc(100vw - 28px));
-  display: flex; flex-direction: column; gap: 9px;
+/* ===== TOP CENTER SEARCH ===== */
+#topCenter {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 30; width: min(440px, calc(100vw - 32px));
 }
-
-.brand {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px;
+.search-box { position: relative; }
+.search-box input {
+  width: 100%; height: 48px; padding: 0 48px 0 18px;
+  background: rgba(0,0,0,0.55); border: 1px solid var(--border);
+  border-radius: 14px; color: var(--text); font-size: 14px; outline: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
-.brand-mark {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: linear-gradient(135deg, #00beff, #0066ff);
-  display: grid; place-items: center;
-  font-weight: 700; font-size: 14px; color: #001018;
-  box-shadow: 0 0 22px rgba(0,190,255,0.35);
-}
-.brand h1 { font-size: 15px; font-weight: 650; }
-.brand p { font-size: 10px; color: var(--cyan); letter-spacing: 0.9px; margin-top: 1px; }
-
-.search-wrap { position: relative; }
-.search-wrap input {
-  width: 100%; height: 44px; padding: 0 42px 0 14px;
-  background: rgba(0,0,0,0.42); border: 1px solid var(--border);
-  border-radius: 11px; color: var(--text); font-size: 13.5px; outline: none;
-}
-.search-wrap input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-dim); }
-.search-wrap button {
-  position: absolute; right: 6px; top: 6px; width: 32px; height: 32px;
+.search-box input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-dim), 0 8px 32px rgba(0,0,0,0.4); }
+.search-box button {
+  position: absolute; right: 8px; top: 8px; width: 32px; height: 32px;
   border: none; background: transparent; color: var(--cyan); border-radius: 8px; cursor: pointer;
 }
-
 #suggestions {
-  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-  max-height: 320px; overflow-y: auto; display: none; z-index: 40;
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+  max-height: 340px; overflow-y: auto; display: none; z-index: 40;
 }
-.sug { padding: 10px 13px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.sug:hover { background: rgba(0,190,255,0.1); }
-.sug b { font-weight: 560; font-size: 13px; }
-.sug span { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.sug { padding: 11px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.sug:hover { background: rgba(0,194,255,0.1); }
+.sug b { font-weight: 560; font-size: 13.5px; }
+.sug span { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
 
+/* ===== LEFT PANEL ===== */
 #sidePanel {
-  position: absolute; top: 125px; left: 14px; z-index: 20;
-  width: 310px; max-height: calc(100vh - 190px); overflow-y: auto;
+  position: absolute; top: 80px; left: 16px; z-index: 20;
+  width: 300px; max-height: calc(100vh - 160px); overflow-y: auto;
   transition: 0.3s cubic-bezier(0.4,0,0.2,1);
 }
-#sidePanel.hide { transform: translateX(-115%); opacity: 0; pointer-events: none; }
-
+#sidePanel.hide { transform: translateX(-120%); opacity: 0; pointer-events: none; }
 .panelHead {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 11px 13px; border-bottom: 1px solid rgba(255,255,255,0.06);
-  font-size: 12.5px; font-weight: 620;
+  padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 13px; font-weight: 620;
 }
-.panelBody { padding: 11px; }
-
-.sec { margin-bottom: 15px; }
-.secTitle {
-  font-size: 10px; text-transform: uppercase; letter-spacing: 0.9px;
-  color: var(--muted); margin-bottom: 6px; padding-left: 2px;
-}
-
+.panelBody { padding: 12px; }
+.sec { margin-bottom: 16px; }
+.secTitle { font-size: 10px; text-transform: uppercase; letter-spacing: 0.9px; color: var(--muted); margin-bottom: 7px; }
 .item {
-  display: flex; align-items: center; gap: 9px;
-  padding: 8px 10px; border-radius: 9px; cursor: pointer;
-  transition: 0.13s; margin-bottom: 2px; font-size: 13px;
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+  border-radius: 10px; cursor: pointer; margin-bottom: 2px; font-size: 13px;
 }
-.item:hover { background: rgba(0,190,255,0.07); }
-.item.active { background: rgba(0,190,255,0.12); }
+.item:hover { background: rgba(0,194,255,0.07); }
+.item.active { background: rgba(0,194,255,0.13); }
 .item input { accent-color: var(--cyan); }
-
-.quick { display: flex; flex-wrap: wrap; gap: 5px; }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; }
 .quick button {
-  padding: 6px 9px; border-radius: 8px; border: 1px solid var(--border);
-  background: rgba(0,0,0,0.3); color: var(--text); font-size: 11.5px; cursor: pointer;
+  padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(0,0,0,0.3); color: var(--text); font-size: 12px; cursor: pointer;
 }
 .quick button:hover { border-color: var(--cyan); background: var(--cyan-dim); color: var(--cyan); }
-
 .satRow {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 10px; background: rgba(0,0,0,0.28); border-radius: 9px;
+  padding: 8px 10px; background: rgba(0,0,0,0.28); border-radius: 10px;
   margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.03); cursor: pointer;
 }
-.satRow:hover, .satRow.selected { border-color: rgba(0,190,255,0.35); }
+.satRow:hover, .satRow.selected { border-color: rgba(0,194,255,0.35); }
 .satRow .n { font-size: 12.5px; font-weight: 530; }
 .satRow .m { font-size: 10.5px; color: var(--muted); }
-.satRow button {
-  width: 24px; height: 24px; border: none; background: transparent;
-  color: var(--red); border-radius: 6px; cursor: pointer; font-size: 14px;
-}
+.satRow button { width: 24px; height: 24px; border: none; background: transparent; color: var(--red); border-radius: 6px; cursor: pointer; font-size: 14px; }
 
+/* ===== TOP RIGHT ===== */
 #topRight {
-  position: absolute; top: 14px; right: 14px; z-index: 20;
+  position: absolute; top: 16px; right: 16px; z-index: 20;
   display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
 }
-.card {
-  padding: 10px 13px; min-width: 150px; text-align: right;
-}
-.card .l { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); }
+.card { padding: 10px 14px; min-width: 150px; text-align: right; }
+.card .l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); }
 .card .v { font-size: 16px; font-weight: 650; color: var(--cyan); margin-top: 2px; }
 .card .s { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
 
+/* ===== BOTTOM ===== */
 #bottomLeft {
-  position: absolute; bottom: 14px; left: 14px; z-index: 20;
+  position: absolute; bottom: 16px; left: 16px; z-index: 20;
   display: flex; flex-direction: column; gap: 7px;
 }
 .coords {
-  display: flex; gap: 14px; padding: 8px 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+  display: flex; gap: 16px; padding: 9px 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
 }
-.coords span { color: var(--muted); margin-right: 4px; }
-.attr { padding: 6px 11px; font-size: 10.5px; color: var(--muted); max-width: 400px; }
+.coords span { color: var(--muted); margin-right: 5px; }
+.attr { padding: 7px 12px; font-size: 11px; color: var(--muted); max-width: 420px; }
 
 #controls {
-  position: absolute; bottom: 14px; right: 14px; z-index: 20;
+  position: absolute; bottom: 16px; right: 16px; z-index: 20;
   display: flex; flex-direction: column; gap: 6px;
 }
 .btn {
-  width: 42px; height: 42px; border-radius: 11px;
+  width: 44px; height: 44px; border-radius: 12px;
   border: 1px solid var(--border); background: var(--panel);
-  color: var(--text); font-size: 16px; cursor: pointer;
+  color: var(--text); font-size: 17px; cursor: pointer;
   display: grid; place-items: center; transition: 0.15s;
 }
 .btn:hover { border-color: var(--cyan); background: var(--cyan-dim); color: var(--cyan); }
-.btn.active { border-color: var(--cyan); background: rgba(0,190,255,0.22); color: var(--cyan); }
+.btn.active { border-color: var(--cyan); background: rgba(0,194,255,0.22); color: var(--cyan); }
 
-#openPanel {
-  position: absolute; top: 125px; left: 14px; z-index: 21;
-  display: none;
-}
+#openPanel { position: absolute; top: 80px; left: 16px; z-index: 21; display: none; }
 
 #infoPanel {
-  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
-  z-index: 40; width: min(340px, calc(100vw - 28px));
-  display: none; overflow: hidden;
+  position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+  z-index: 40; width: min(340px, calc(100vw - 32px)); display: none;
 }
 #infoPanel.show { display: block; }
 .infoHead {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 13px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-.infoHead h3 { font-size: 13.5px; font-weight: 620; }
-.infoBody { padding: 10px 13px 12px; font-size: 12.5px; }
-.infoRow {
-  display: flex; justify-content: space-between;
-  padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
-}
+.infoHead h3 { font-size: 14px; font-weight: 620; }
+.infoBody { padding: 11px 14px 13px; font-size: 13px; }
+.infoRow { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
 .infoRow .k { color: var(--muted); }
-.infoRow .v { font-family: ui-monospace, monospace; font-size: 12px; }
+.infoRow .v { font-family: ui-monospace, monospace; font-size: 12.5px; }
 
 #toast {
-  position: absolute; top: 80px; left: 50%; transform: translateX(-50%) translateY(-10px);
-  z-index: 100; padding: 10px 18px; border-radius: 11px;
-  background: var(--panel2); border: 1px solid var(--border);
-  font-size: 12.5px; opacity: 0; pointer-events: none; transition: 0.25s;
+  position: absolute; top: 80px; left: 50%; transform: translateX(-50%) translateY(-12px);
+  z-index: 100; padding: 11px 20px; border-radius: 12px;
+  background: rgba(8,14,28,0.96); border: 1px solid var(--border);
+  font-size: 13px; opacity: 0; pointer-events: none; transition: 0.25s;
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 ::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-thumb { background: rgba(0,190,255,0.25); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(0,194,255,0.25); border-radius: 4px; }
 
 @media (max-width: 700px) {
-  #sidePanel { top: auto; bottom: 88px; left: 10px; right: 10px; width: auto; max-height: 48vh; }
+  #sidePanel { top: auto; bottom: 90px; left: 12px; right: 12px; width: auto; max-height: 48vh; }
   #sidePanel.hide { transform: translateY(120%); }
-  #openPanel { display: grid; top: auto; bottom: 88px; left: 10px; }
+  #openPanel { display: grid; top: auto; bottom: 90px; left: 12px; }
+  #topCenter { width: calc(100vw - 28px); }
 }
 </style>
 </head>
 <body>
-
 <div id="cesiumContainer"></div>
 
-<div id="topLeft" class="ui">
-  <div class="glass brand">
-    <div class="brand-mark">OL</div>
-    <div>
-      <h1>ORBIT LIVE</h1>
-      <p>ADVANCED TRACKER</p>
-    </div>
-  </div>
-  <div class="search-wrap">
-    <input id="search" placeholder="Stadt oder Satellit suchen…" autocomplete="off">
+<!-- TOP CENTER SEARCH -->
+<div id="topCenter" class="ui">
+  <div class="search-box">
+    <input id="search" placeholder="Stadt oder Satellit suchen (ISS, Hubble, Starlink…)" autocomplete="off">
     <button id="searchBtn">⌕</button>
     <div id="suggestions" class="glass"></div>
   </div>
 </div>
 
+<!-- LEFT PANEL -->
 <div id="sidePanel" class="glass ui">
   <div class="panelHead">
-    <span>Control Center</span>
-    <button style="background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer" id="closePanel">×</button>
+    <span>ORBIT LIVE</span>
+    <button style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer" id="closePanel">×</button>
   </div>
   <div class="panelBody">
     <div class="sec">
@@ -246,20 +196,17 @@ body.ui-hidden .ui { display: none !important; }
       <div class="item" data-base="osm"><input type="radio" name="base"> Straßenkarte</div>
       <div class="item" data-base="dark"><input type="radio" name="base"> Dark</div>
     </div>
-
     <div class="sec">
       <div class="secTitle">Darstellung</div>
       <div class="item"><input type="checkbox" id="chkOrbits" checked> Orbit-Linien</div>
       <div class="item"><input type="checkbox" id="chkGround"> Ground Track</div>
-      <div class="item"><input type="checkbox" id="chkLabels" checked> Namen anzeigen</div>
+      <div class="item"><input type="checkbox" id="chkLabels" checked> Namen</div>
     </div>
-
     <div class="sec">
       <div class="secTitle">Overlays</div>
       <div class="item"><input type="checkbox" id="chkRain"> Niederschlag</div>
       <div class="item"><input type="checkbox" id="chkWind"> Wind</div>
     </div>
-
     <div class="sec">
       <div class="secTitle">Schnell laden</div>
       <div class="quick">
@@ -270,25 +217,23 @@ body.ui-hidden .ui { display: none !important; }
         <button data-g="weather">Wetter</button>
         <button data-g="visual">Hell</button>
         <button data-g="stations">Stationen</button>
-        <button data-g="gps">GPS</button>
       </div>
     </div>
-
     <div class="sec">
       <div class="secTitle">Aktive Satelliten <span id="satCount" style="color:var(--cyan)"></span></div>
       <div id="satList"></div>
-      <button class="quick" style="width:100%;margin-top:6px;justify-content:center" id="clearSats">Alle entfernen</button>
+      <button class="quick" style="width:100%;margin-top:8px;justify-content:center" id="clearSats">Alle entfernen</button>
     </div>
   </div>
 </div>
+<button class="btn ui" id="openPanel">☰</button>
 
-<button class="btn ui" id="openPanel" title="Panel">☰</button>
-
+<!-- TOP RIGHT -->
 <div id="topRight" class="ui">
   <div class="glass card">
     <div class="l">Temperatur</div>
     <div class="v" id="temp">–</div>
-    <div class="s" id="wSub">Lade Wetter…</div>
+    <div class="s" id="wSub">Lade…</div>
   </div>
   <div class="glass card" style="min-width:120px">
     <div class="l">Status</div>
@@ -300,6 +245,7 @@ body.ui-hidden .ui { display: none !important; }
   </div>
 </div>
 
+<!-- BOTTOM -->
 <div id="bottomLeft" class="ui">
   <div class="glass coords">
     <div><span>LAT</span><b id="lat">–</b></div>
@@ -310,11 +256,11 @@ body.ui-hidden .ui { display: none !important; }
 </div>
 
 <div id="controls" class="ui">
-  <button class="btn" id="btnFollow" title="Follow-Modus">◎</button>
-  <button class="btn" id="btnHideUI" title="UI ausblenden (H)">◻</button>
+  <button class="btn" id="btnFollow" title="Follow">◎</button>
+  <button class="btn" id="btnHideUI" title="UI aus (H)">◻</button>
   <button class="btn" id="btnHome" title="Welt">⌂</button>
   <button class="btn" id="btnLocate" title="Standort">⌖</button>
-  <button class="btn" id="btnFs" title="Vollbild">⛶</button>
+  <button class="btn" id="btnFs">⛶</button>
   <button class="btn" id="btnIn">+</button>
   <button class="btn" id="btnOut">−</button>
 </div>
@@ -322,130 +268,93 @@ body.ui-hidden .ui { display: none !important; }
 <div id="infoPanel" class="glass ui">
   <div class="infoHead">
     <h3 id="infoName">–</h3>
-    <button style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer" id="closeInfo">×</button>
+    <button style="background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer" id="closeInfo">×</button>
   </div>
   <div class="infoBody" id="infoBody"></div>
 </div>
-
 <div id="toast"></div>
 
 <script>
-(function () {
+(function(){
   'use strict';
-
-  // ========== CESIUM ==========
   Cesium.Ion.defaultAccessToken = undefined;
 
   const viewer = new Cesium.Viewer('cesiumContainer', {
-    animation: false, timeline: false, baseLayerPicker: false, geocoder: false,
-    homeButton: false, sceneModePicker: false, navigationHelpButton: false,
-    fullscreenButton: false, infoBox: false, selectionIndicator: false,
-    terrainProvider: new Cesium.EllipsoidTerrainProvider(),
-    baseLayer: false
+    animation:false, timeline:false, baseLayerPicker:false, geocoder:false,
+    homeButton:false, sceneModePicker:false, navigationHelpButton:false,
+    fullscreenButton:false, infoBox:false, selectionIndicator:false,
+    terrainProvider: new Cesium.EllipsoidTerrainProvider(), baseLayer:false
   });
 
   const scene = viewer.scene;
   scene.globe.enableLighting = true;
-  scene.globe.atmosphereLightIntensity = 32;
+  scene.globe.atmosphereLightIntensity = 30;
   scene.globe.showGroundAtmosphere = true;
   scene.skyAtmosphere.show = true;
-  scene.skyAtmosphere.brightnessShift = 0.09;
-  scene.skyAtmosphere.saturationShift = 0.12;
+  scene.skyAtmosphere.brightnessShift = 0.08;
   scene.fog.enabled = true;
   scene.sun.show = true;
   scene.moon.show = true;
-  scene.screenSpaceCameraController.minimumZoomDistance = 40000;
-  scene.screenSpaceCameraController.maximumZoomDistance = 6e7;
+  scene.screenSpaceCameraController.minimumZoomDistance = 50000;
+  scene.screenSpaceCameraController.maximumZoomDistance = 55000000;
 
   const esri = new Cesium.UrlTemplateImageryProvider({
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     maximumLevel: 19
   });
   viewer.imageryLayers.addImageryProvider(esri);
+  viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(15, 25, 16000000) });
 
-  viewer.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(15, 25, 16500000)
-  });
-
-  // ========== ICON (oriented) ==========
-  function createSatIcon(color) {
+  // ===== Better satellite icon (pointing up, rotation applied) =====
+  function makeIcon(color) {
     const c = document.createElement('canvas');
-    c.width = 48; c.height = 48;
+    c.width = 40; c.height = 40;
     const ctx = c.getContext('2d');
-
-    // pointed satellite shape facing UP (rotation will handle direction)
-    ctx.translate(24, 24);
+    ctx.translate(20, 20);
     ctx.fillStyle = color;
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1.8;
-
-    // body
+    ctx.lineWidth = 1.6;
+    // pointed body
     ctx.beginPath();
-    ctx.moveTo(0, -14);
-    ctx.lineTo(6, 2);
-    ctx.lineTo(3, 10);
-    ctx.lineTo(-3, 10);
-    ctx.lineTo(-6, 2);
+    ctx.moveTo(0, -13);
+    ctx.lineTo(5.5, 3);
+    ctx.lineTo(2.5, 11);
+    ctx.lineTo(-2.5, 11);
+    ctx.lineTo(-5.5, 3);
     ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
+    ctx.fill(); ctx.stroke();
     // panels
-    ctx.fillRect(-16, -2, 10, 7);
-    ctx.fillRect(6, -2, 10, 7);
-    ctx.strokeRect(-16, -2, 10, 7);
-    ctx.strokeRect(6, -2, 10, 7);
-
+    ctx.fillRect(-15, -1, 9, 6);
+    ctx.fillRect(6, -1, 9, 6);
+    ctx.strokeRect(-15, -1, 9, 6);
+    ctx.strokeRect(6, -1, 9, 6);
     return c.toDataURL();
   }
 
-  // ========== STATE ==========
   const sats = {};
-  const colors = ['#00beff','#ff4b6a','#2ce59b','#ffb020','#b794f4','#f687b3','#4fd1c5','#f6ad55'];
-  let colorIdx = 0;
-  let showOrbits = true;
-  let showGround = false;
-  let showLabels = true;
-  let followName = null;
-  let selectedName = null;
-  let rainL = null, windL = null;
+  const colors = ['#00c2ff','#ff4d6d','#2ce59b','#ffb020','#b794f4','#f687b3','#4fd1c5','#f6ad55'];
+  let colorIdx = 0, showOrbits = true, showGround = false, showLabels = true;
+  let followName = null, selectedName = null, rainL = null, windL = null;
 
   const $ = id => document.getElementById(id);
-  const toast = m => {
-    const t = $('toast');
-    t.textContent = m;
-    t.className = 'show';
-    setTimeout(() => t.className = '', 2500);
-  };
+  const toast = m => { const t=$('toast'); t.textContent=m; t.className='show'; setTimeout(()=>t.className='',2500); };
   const status = t => $('status').textContent = t;
 
-  // ========== LAYERS ==========
+  // Layers
   document.querySelectorAll('[data-base]').forEach(el => {
     el.onclick = () => {
-      document.querySelectorAll('[data-base]').forEach(x => x.classList.remove('active'));
-      el.classList.add('active');
-      el.querySelector('input').checked = true;
+      document.querySelectorAll('[data-base]').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active'); el.querySelector('input').checked = true;
       viewer.imageryLayers.removeAll();
-      if (el.dataset.base === 'sat') viewer.imageryLayers.addImageryProvider(esri);
-      else if (el.dataset.base === 'osm') viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',maximumLevel:19}));
+      if (el.dataset.base==='sat') viewer.imageryLayers.addImageryProvider(esri);
+      else if (el.dataset.base==='osm') viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',maximumLevel:19}));
       else viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({url:'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',maximumLevel:19}));
     };
   });
 
-  $('chkOrbits').onchange = e => {
-    showOrbits = e.target.checked;
-    Object.values(sats).forEach(s => { if (s.orbit) s.orbit.show = showOrbits; });
-  };
-  $('chkGround').onchange = e => {
-    showGround = e.target.checked;
-    Object.values(sats).forEach(s => { if (s.ground) s.ground.show = showGround; });
-  };
-  $('chkLabels').onchange = e => {
-    showLabels = e.target.checked;
-    Object.values(sats).forEach(s => {
-      if (s.entity.label) s.entity.label.show = showLabels;
-    });
-  };
+  $('chkOrbits').onchange = e => { showOrbits = e.target.checked; Object.values(sats).forEach(s => { if(s.orbit) s.orbit.show = showOrbits; }); };
+  $('chkGround').onchange = e => { showGround = e.target.checked; Object.values(sats).forEach(s => { if(s.ground) s.ground.show = showGround; }); };
+  $('chkLabels').onchange = e => { showLabels = e.target.checked; Object.values(sats).forEach(s => { if(s.entity.label) s.entity.label.show = showLabels; }); };
 
   $('chkRain').onchange = async e => {
     if (e.target.checked) {
@@ -456,10 +365,9 @@ body.ui-hidden .ui { display: none !important; }
         rainL = viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
           url: `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/2/1_1.png`, maximumLevel:12
         }));
-        rainL.alpha = 0.5;
-        toast('Radar aktiv');
-      } catch { e.target.checked = false; toast('Radar offline'); }
-    } else if (rainL) { viewer.imageryLayers.remove(rainL); rainL = null; }
+        rainL.alpha = 0.5; toast('Radar aktiv');
+      } catch { e.target.checked=false; toast('Radar offline'); }
+    } else if (rainL) { viewer.imageryLayers.remove(rainL); rainL=null; }
   };
 
   $('chkWind').onchange = e => {
@@ -469,19 +377,15 @@ body.ui-hidden .ui { display: none !important; }
       windL = viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
         url: `https://weathermaps.weatherapi.com/wind/tiles/${key}/{z}/{x}/{y}.png`, maximumLevel:8
       }));
-      windL.alpha = 0.55;
-      toast('Wind aktiv');
-    } else if (windL) { viewer.imageryLayers.remove(windL); windL = null; }
+      windL.alpha = 0.55; toast('Wind aktiv');
+    } else if (windL) { viewer.imageryLayers.remove(windL); windL=null; }
   };
 
-  // ========== ORBIT + GROUND TRACK CALC ==========
+  // Build accurate tracks
   function buildTracks(satrec, color) {
-    const orbitPos = [];
-    const groundPos = [];
+    const orbitPos = [], groundPos = [];
     const now = new Date();
-
-    // future orbit ~ 1.5 periods (approx 100–120 min)
-    for (let min = 0; min <= 120; min += 1) {
+    for (let min = 0; min <= 110; min += 1) {
       const t = new Date(now.getTime() + min * 60000);
       try {
         const pv = satellite.propagate(satrec, t);
@@ -491,217 +395,130 @@ body.ui-hidden .ui { display: none !important; }
         const lon = satellite.degreesLong(geo.longitude);
         const lat = satellite.degreesLat(geo.latitude);
         const alt = geo.height * 1000;
-
         orbitPos.push(Cesium.Cartesian3.fromDegrees(lon, lat, alt));
         groundPos.push(Cesium.Cartesian3.fromDegrees(lon, lat, 0));
       } catch {}
     }
-
     const orbit = viewer.entities.add({
-      polyline: {
-        positions: orbitPos,
-        width: 1.5,
-        material: Cesium.Color.fromCssColorString(color).withAlpha(0.45),
-        clampToGround: false
-      },
+      polyline: { positions: orbitPos, width: 1.6, material: Cesium.Color.fromCssColorString(color).withAlpha(0.48) },
       show: showOrbits
     });
-
     const ground = viewer.entities.add({
-      polyline: {
-        positions: groundPos,
-        width: 1.2,
-        material: Cesium.Color.fromCssColorString(color).withAlpha(0.3),
-        clampToGround: true
-      },
+      polyline: { positions: groundPos, width: 1.2, material: Cesium.Color.fromCssColorString(color).withAlpha(0.28), clampToGround: true },
       show: showGround
     });
-
     return { orbit, ground };
   }
 
-  // ========== ADD SATELLITE ==========
   function addSat(name, tle1, tle2) {
     if (sats[name]) return false;
-
     let satrec;
-    try {
-      satrec = satellite.twoline2satrec(tle1.trim(), tle2.trim());
-    } catch {
-      return false;
-    }
-
+    try { satrec = satellite.twoline2satrec(tle1.trim(), tle2.trim()); } catch { return false; }
     const color = colors[colorIdx++ % colors.length];
-    const icon = createSatIcon(color);
+    const icon = makeIcon(color);
 
     const entity = viewer.entities.add({
       name,
-      position: Cesium.Cartesian3.fromDegrees(0, 0, 400000),
+      position: Cesium.Cartesian3.fromDegrees(0,0,400000),
       billboard: {
-        image: icon,
-        width: 26,
-        height: 26,
-        alignedAxis: Cesium.Cartesian3.UNIT_Z, // we will set rotation
+        image: icon, width: 28, height: 28,
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        scaleByDistance: new Cesium.NearFarScalar(4e4, 1.35, 1.2e7, 0.4)
+        scaleByDistance: new Cesium.NearFarScalar(5e4, 1.3, 1.2e7, 0.4)
       },
       label: {
-        text: name,
-        font: '11.5px Inter, sans-serif',
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.BLACK,
-        outlineWidth: 3,
+        text: name, font: '12px Inter, sans-serif',
+        fillColor: Cesium.Color.WHITE, outlineColor: Cesium.Color.BLACK, outlineWidth: 3,
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-        pixelOffset: new Cesium.Cartesian2(0, -18),
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -18),
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        scaleByDistance: new Cesium.NearFarScalar(4e4, 1, 9e6, 0.3),
+        scaleByDistance: new Cesium.NearFarScalar(5e4, 1, 9e6, 0.3),
         show: showLabels
       }
     });
 
     const tracks = buildTracks(satrec, color);
-
-    sats[name] = {
-      satrec,
-      entity,
-      orbit: tracks.orbit,
-      ground: tracks.ground,
-      color,
-      last: null
-    };
-
+    sats[name] = { satrec, entity, orbit: tracks.orbit, ground: tracks.ground, color, last: null };
     renderList();
     return true;
   }
 
   function removeSat(name) {
-    const s = sats[name];
-    if (!s) return;
+    const s = sats[name]; if (!s) return;
     viewer.entities.remove(s.entity);
     if (s.orbit) viewer.entities.remove(s.orbit);
     if (s.ground) viewer.entities.remove(s.ground);
     if (followName === name) stopFollow();
-    if (selectedName === name) {
-      selectedName = null;
-      $('infoPanel').classList.remove('show');
-    }
-    delete sats[name];
-    renderList();
+    if (selectedName === name) { selectedName = null; $('infoPanel').classList.remove('show'); }
+    delete sats[name]; renderList();
   }
 
   function renderList() {
-    const list = $('satList');
-    list.innerHTML = '';
+    const list = $('satList'); list.innerHTML = '';
     const keys = Object.keys(sats);
     $('satCount').textContent = keys.length ? `(${keys.length})` : '';
     $('liveCount').textContent = keys.length;
-
     keys.forEach(n => {
       const div = document.createElement('div');
       div.className = 'satRow' + (selectedName === n ? ' selected' : '');
-      div.innerHTML = `
-        <div>
-          <div class="n" style="color:${sats[n].color}">${n}</div>
-          <div class="m">SGP4 · Live</div>
-        </div>
-        <button data-n="${n}">×</button>`;
-      div.onclick = e => {
-        if (e.target.tagName === 'BUTTON') return;
-        selectSat(n);
-      };
+      div.innerHTML = `<div><div class="n" style="color:${sats[n].color}">${n}</div><div class="m">SGP4 Live</div></div><button data-n="${n}">×</button>`;
+      div.onclick = e => { if (e.target.tagName === 'BUTTON') return; selectSat(n); };
       list.appendChild(div);
     });
-
-    list.querySelectorAll('button').forEach(b => {
-      b.onclick = e => {
-        e.stopPropagation();
-        removeSat(b.dataset.n);
-      };
-    });
+    list.querySelectorAll('button').forEach(b => b.onclick = e => { e.stopPropagation(); removeSat(b.dataset.n); });
   }
 
-  // ========== POSITION + HEADING UPDATE ==========
+  // Position + heading (icon orientation)
   function updateAll() {
     const now = new Date();
-
     Object.entries(sats).forEach(([name, s]) => {
       try {
         const pv = satellite.propagate(s.satrec, now);
-        if (!pv.position || !pv.velocity) return;
-
+        if (!pv.position) return;
         const gmst = satellite.gstime(now);
         const geo = satellite.eciToGeodetic(pv.position, gmst);
         const lon = satellite.degreesLong(geo.longitude);
         const lat = satellite.degreesLat(geo.latitude);
         const alt = geo.height * 1000;
+        s.entity.position = Cesium.Cartesian3.fromDegrees(lon, lat, alt);
 
-        // position
-        const pos = Cesium.Cartesian3.fromDegrees(lon, lat, alt);
-        s.entity.position = pos;
-
-        // velocity for heading (ECI → ECEF roughly via gmst)
-        // simplified heading from velocity
-        const vel = pv.velocity;
-        // convert a small step ahead to get direction on ground
-        const t2 = new Date(now.getTime() + 5000);
+        // heading from short future step
+        const t2 = new Date(now.getTime() + 8000);
         const pv2 = satellite.propagate(s.satrec, t2);
         if (pv2.position) {
           const geo2 = satellite.eciToGeodetic(pv2.position, satellite.gstime(t2));
           const lon2 = satellite.degreesLong(geo2.longitude);
           const lat2 = satellite.degreesLat(geo2.latitude);
-
-          // calculate bearing
           const dLon = (lon2 - lon) * Math.PI / 180;
-          const lat1 = lat * Math.PI / 180;
-          const lat2r = lat2 * Math.PI / 180;
-          const y = Math.sin(dLon) * Math.cos(lat2r);
-          const x = Math.cos(lat1) * Math.sin(lat2r) - Math.sin(lat1) * Math.cos(lat2r) * Math.cos(dLon);
-          let bearing = Math.atan2(y, x); // radians
-
-          // Cesium billboard rotation: 0 = up, clockwise positive in screen? 
-          // We set rotation so the tip points in movement direction
-          if (s.entity.billboard) {
-            s.entity.billboard.rotation = -bearing; // adjust sign if needed
-          }
+          const φ1 = lat * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+          const y = Math.sin(dLon) * Math.cos(φ2);
+          const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(dLon);
+          const bearing = Math.atan2(y, x);
+          if (s.entity.billboard) s.entity.billboard.rotation = -bearing;
         }
-
-        s.last = { lon, lat, alt, time: now };
-
+        s.last = { lon, lat, alt };
         if (selectedName === name) updateInfo(name, s.last);
-      } catch (e) {}
+      } catch {}
     });
   }
 
-  // ========== SELECT / FOLLOW / INFO ==========
   function selectSat(name) {
     if (!sats[name]) return;
-    selectedName = name;
-    renderList();
-
+    selectedName = name; renderList();
     const p = sats[name].last;
     $('infoName').textContent = name;
     if (p) updateInfo(name, p);
     $('infoPanel').classList.add('show');
-
-    if (!followName) {
-      if (p) {
-        viewer.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, Math.max(p.alt * 3.5, 600000)),
-          duration: 1.3
-        });
-      }
+    if (!followName && p) {
+      viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, Math.max(p.alt*3.2, 550000)), duration: 1.3 });
     }
   }
 
   function updateInfo(name, p) {
-    const following = followName === name;
     $('infoBody').innerHTML = `
       <div class="infoRow"><span class="k">Latitude</span><span class="v">${p.lat.toFixed(4)}°</span></div>
       <div class="infoRow"><span class="k">Longitude</span><span class="v">${p.lon.toFixed(4)}°</span></div>
       <div class="infoRow"><span class="k">Höhe</span><span class="v">${(p.alt/1000).toFixed(1)} km</span></div>
-      <div class="infoRow"><span class="k">Follow</span><span class="v">${following ? 'Aktiv' : 'Aus'}</span></div>
-    `;
+      <div class="infoRow"><span class="k">Follow</span><span class="v">${followName===name?'Aktiv':'Aus'}</span></div>`;
   }
 
   function startFollow(name) {
@@ -712,7 +529,6 @@ body.ui-hidden .ui { display: none !important; }
     toast('Follow: ' + name);
     selectSat(name);
   }
-
   function stopFollow() {
     followName = null;
     viewer.trackedEntity = undefined;
@@ -720,128 +536,83 @@ body.ui-hidden .ui { display: none !important; }
   }
 
   $('btnFollow').onclick = () => {
-    if (followName) {
-      stopFollow();
-      return;
-    }
+    if (followName) { stopFollow(); return; }
     const keys = Object.keys(sats);
     if (!keys.length) { toast('Kein Satellit geladen'); return; }
-    const target = selectedName && sats[selectedName] ? selectedName : keys[0];
-    startFollow(target);
+    startFollow(selectedName && sats[selectedName] ? selectedName : keys[0]);
   };
+  $('closeInfo').onclick = () => { $('infoPanel').classList.remove('show'); selectedName=null; renderList(); };
 
-  $('closeInfo').onclick = () => {
-    $('infoPanel').classList.remove('show');
-    selectedName = null;
-    renderList();
-  };
-
-  // ========== LOAD GROUPS ==========
-  async function loadGroup(group, filterFn, limit = 10) {
+  async function loadGroup(group, filterFn, limit=10) {
     status('Lade TLE…');
     try {
       const res = await fetch(`https://celestrak.org/NORAD/elements/gp.php?GROUP=${encodeURIComponent(group)}&FORMAT=tle`);
       const text = await res.text();
       const lines = text.trim().split(/\r?\n/);
       let added = 0;
-      for (let i = 0; i < lines.length - 2 && added < limit; i += 3) {
+      for (let i=0; i<lines.length-2 && added<limit; i+=3) {
         const name = lines[i].trim();
-        if (filterFn(name)) {
-          if (addSat(name, lines[i+1], lines[i+2])) added++;
-        }
+        if (filterFn(name) && addSat(name, lines[i+1], lines[i+2])) added++;
       }
       status('Bereit');
-      if (added) toast(added + ' Satellit(en) hinzugefügt');
-      else toast('Keine neuen gefunden');
-    } catch {
-      status('Bereit');
-      toast('TLE-Daten nicht erreichbar');
-    }
+      toast(added ? added + ' Satellit(en) geladen' : 'Keine neuen gefunden');
+    } catch { status('Bereit'); toast('TLE nicht erreichbar'); }
   }
 
   document.querySelectorAll('[data-g]').forEach(btn => {
     btn.onclick = () => {
       const g = btn.dataset.g;
-      if (g === 'iss') loadGroup('stations', n => /ISS|ZARYA/i.test(n), 2);
-      else if (g === 'hst') loadGroup('stations', n => /HST/i.test(n), 1);
-      else if (g === 'css') loadGroup('stations', n => /CSS|TIANHE/i.test(n), 2);
-      else if (g === 'starlink') loadGroup('starlink', n => /STARLINK/i.test(n), 12);
-      else if (g === 'weather') loadGroup('weather', n => /NOAA|METOP|GOES/i.test(n), 8);
-      else if (g === 'visual') loadGroup('visual', n => true, 10);
-      else if (g === 'stations') loadGroup('stations', n => true, 8);
-      else if (g === 'gps') loadGroup('gps-ops', n => true, 10);
+      if (g==='iss') loadGroup('stations', n=>/ISS|ZARYA/i.test(n), 2);
+      else if (g==='hst') loadGroup('stations', n=>/HST/i.test(n), 1);
+      else if (g==='css') loadGroup('stations', n=>/CSS|TIANHE/i.test(n), 2);
+      else if (g==='starlink') loadGroup('starlink', n=>/STARLINK/i.test(n), 12);
+      else if (g==='weather') loadGroup('weather', n=>/NOAA|METOP|GOES/i.test(n), 8);
+      else if (g==='visual') loadGroup('visual', n=>true, 10);
+      else if (g==='stations') loadGroup('stations', n=>true, 8);
     };
   });
+  $('clearSats').onclick = () => { Object.keys(sats).forEach(removeSat); toast('Alle entfernt'); };
 
-  $('clearSats').onclick = () => {
-    Object.keys(sats).forEach(removeSat);
-    toast('Alle entfernt');
-  };
-
-  // initial ISS
-  loadGroup('stations', n => /ISS|ZARYA/i.test(n), 1);
-
+  loadGroup('stations', n=>/ISS|ZARYA/i.test(n), 1);
   setInterval(updateAll, 1000);
 
-  // ========== SEARCH (improved) ==========
-  let searchTimer;
-  $('search').oninput = () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => doSearch($('search').value.trim()), 300);
-  };
+  // ===== Improved Search (top center) =====
+  let st;
+  $('search').oninput = () => { clearTimeout(st); st = setTimeout(() => doSearch($('search').value.trim()), 280); };
   $('searchBtn').onclick = () => doSearch($('search').value.trim());
 
   async function doSearch(q) {
-    if (q.length < 2) {
-      $('suggestions').style.display = 'none';
-      return;
-    }
+    if (q.length < 2) { $('suggestions').style.display='none'; return; }
+    const ql = q.toLowerCase();
+    let html = '';
 
-    const qLower = q.toLowerCase();
-    const satHints = [];
-
-    // local already tracked
+    // already tracked
     Object.keys(sats).forEach(n => {
-      if (n.toLowerCase().includes(qLower)) {
-        satHints.push({ type: 'tracked', name: n });
-      }
+      if (n.toLowerCase().includes(ql))
+        html += `<div class="sug" data-type="tracked" data-name="${n}"><b>${n}</b><span>Bereits geladen – anzeigen</span></div>`;
     });
 
-    // popular shortcuts
+    // popular
     const popular = [
-      { keys: ['iss', 'zarya'], label: 'ISS (ZARYA)', group: 'stations', filter: n => /ISS|ZARYA/i.test(n) },
-      { keys: ['hubble', 'hst'], label: 'Hubble (HST)', group: 'stations', filter: n => /HST/i.test(n) },
-      { keys: ['tiangong', 'css', 'tianhe'], label: 'Tiangong / CSS', group: 'stations', filter: n => /CSS|TIANHE/i.test(n) },
-      { keys: ['starlink'], label: 'Starlink (mehrere)', group: 'starlink', filter: n => /STARLINK/i.test(n) },
-      { keys: ['noaa'], label: 'NOAA Wetter', group: 'weather', filter: n => /NOAA/i.test(n) }
+      {k:['iss','zarya'], label:'ISS (ZARYA)', g:'stations', f:n=>/ISS|ZARYA/i.test(n)},
+      {k:['hubble','hst'], label:'Hubble (HST)', g:'stations', f:n=>/HST/i.test(n)},
+      {k:['tiangong','css','tianhe'], label:'Tiangong / CSS', g:'stations', f:n=>/CSS|TIANHE/i.test(n)},
+      {k:['starlink'], label:'Starlink (Auswahl)', g:'starlink', f:n=>/STARLINK/i.test(n)},
+      {k:['noaa'], label:'NOAA Wetter', g:'weather', f:n=>/NOAA/i.test(n)}
     ];
-
     popular.forEach(p => {
-      if (p.keys.some(k => qLower.includes(k))) {
-        satHints.push({ type: 'load', label: p.label, group: p.group, filter: p.filter });
-      }
+      if (p.k.some(k => ql.includes(k)))
+        html += `<div class="sug" data-type="load" data-g="${p.g}" data-label="${p.label}"><b>${p.label}</b><span>Satelliten laden</span></div>`;
     });
 
     // places
-    let places = [];
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6`);
-      places = await res.json();
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`);
+      const places = await res.json();
+      places.forEach(p => {
+        html += `<div class="sug" data-type="place" data-lon="${p.lon}" data-lat="${p.lat}"><b>${p.display_name.split(',')[0]}</b><span>${p.display_name}</span></div>`;
+      });
     } catch {}
-
-    let html = '';
-    satHints.forEach(h => {
-      if (h.type === 'tracked') {
-        html += `<div class="sug" data-type="tracked" data-name="${h.name}"><b>${h.name}</b><span>Bereits geladen – anzeigen</span></div>`;
-      } else {
-        html += `<div class="sug" data-type="load" data-group="${h.group}" data-label="${h.label}"><b>${h.label}</b><span>Satelliten laden</span></div>`;
-      }
-    });
-
-    places.forEach(p => {
-      html += `<div class="sug" data-type="place" data-lon="${p.lon}" data-lat="${p.lat}">
-        <b>${p.display_name.split(',')[0]}</b><span>${p.display_name}</span></div>`;
-    });
 
     if (!html) html = `<div class="sug"><b>Keine Treffer</b></div>`;
     $('suggestions').innerHTML = html;
@@ -849,109 +620,72 @@ body.ui-hidden .ui { display: none !important; }
 
     $('suggestions').querySelectorAll('.sug').forEach(el => {
       el.onclick = () => {
-        const type = el.dataset.type;
-        if (type === 'tracked') {
-          selectSat(el.dataset.name);
-        } else if (type === 'load') {
-          const g = el.dataset.group;
-          if (g === 'stations' && el.dataset.label.includes('ISS')) loadGroup('stations', n => /ISS|ZARYA/i.test(n), 2);
-          else if (g === 'stations' && el.dataset.label.includes('Hubble')) loadGroup('stations', n => /HST/i.test(n), 1);
-          else if (g === 'stations') loadGroup('stations', n => /CSS|TIANHE/i.test(n), 2);
-          else if (g === 'starlink') loadGroup('starlink', n => /STARLINK/i.test(n), 10);
-          else if (g === 'weather') loadGroup('weather', n => /NOAA/i.test(n), 6);
-        } else if (type === 'place') {
+        const t = el.dataset.type;
+        if (t === 'tracked') selectSat(el.dataset.name);
+        else if (t === 'load') {
+          const g = el.dataset.g, label = el.dataset.label || '';
+          if (g==='stations' && label.includes('ISS')) loadGroup('stations', n=>/ISS|ZARYA/i.test(n), 2);
+          else if (g==='stations' && label.includes('Hubble')) loadGroup('stations', n=>/HST/i.test(n), 1);
+          else if (g==='stations') loadGroup('stations', n=>/CSS|TIANHE/i.test(n), 2);
+          else if (g==='starlink') loadGroup('starlink', n=>/STARLINK/i.test(n), 10);
+          else if (g==='weather') loadGroup('weather', n=>/NOAA/i.test(n), 6);
+        } else if (t === 'place') {
           stopFollow();
-          viewer.camera.flyTo({
-            destination: Cesium.Cartesian3.fromDegrees(+el.dataset.lon, +el.dataset.lat, 250000),
-            duration: 1.7
-          });
+          viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(+el.dataset.lon, +el.dataset.lat, 220000), duration: 1.6 });
         }
         $('suggestions').style.display = 'none';
       };
     });
   }
+  document.addEventListener('click', e => { if (!e.target.closest('.search-box')) $('suggestions').style.display='none'; });
 
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.search-wrap')) $('suggestions').style.display = 'none';
-  });
-
-  // ========== WEATHER + COORDS ==========
+  // Weather + coords
   async function weather() {
     try {
       const c = viewer.camera.positionCartographic;
-      const lat = Cesium.Math.toDegrees(c.latitude);
-      const lon = Cesium.Math.toDegrees(c.longitude);
+      const lat = Cesium.Math.toDegrees(c.latitude), lon = Cesium.Math.toDegrees(c.longitude);
       const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&current=temperature_2m,wind_speed_10m,relative_humidity_2m&wind_speed_unit=kmh`);
       const d = await r.json();
       $('temp').textContent = Math.round(d.current.temperature_2m) + '°';
       $('wSub').textContent = `Wind ${Math.round(d.current.wind_speed_10m)} km/h · ${d.current.relative_humidity_2m}%`;
-    } catch {
-      $('temp').textContent = '–';
-      $('wSub').textContent = 'Offline';
-    }
+    } catch { $('temp').textContent='–'; $('wSub').textContent='Offline'; }
   }
-
   viewer.camera.changed.addEventListener(() => {
     const c = viewer.camera.positionCartographic;
     $('lat').textContent = Cesium.Math.toDegrees(c.latitude).toFixed(3);
     $('lon').textContent = Cesium.Math.toDegrees(c.longitude).toFixed(3);
-    $('alt').textContent = (c.height / 1000).toFixed(0) + ' km';
+    $('alt').textContent = (c.height/1000).toFixed(0) + ' km';
   });
+  setInterval(weather, 50000); weather(); status('Bereit');
 
-  setInterval(weather, 50000);
-  weather();
-  status('Bereit');
-
-  // ========== UI HIDE ==========
+  // UI hide
   function toggleUI() {
     document.body.classList.toggle('ui-hidden');
-    const hidden = document.body.classList.contains('ui-hidden');
-    $('btnHideUI').classList.toggle('active', hidden);
-    toast(hidden ? 'UI aus – Taste H zum Einblenden' : 'UI wieder sichtbar');
+    const h = document.body.classList.contains('ui-hidden');
+    $('btnHideUI').classList.toggle('active', h);
+    toast(h ? 'UI aus – Taste H zum Einblenden' : 'UI wieder sichtbar');
   }
   $('btnHideUI').onclick = toggleUI;
   document.addEventListener('keydown', e => {
-    if ((e.key === 'h' || e.key === 'H') && e.target.tagName !== 'INPUT') toggleUI();
-    if (e.key === 'Escape') {
-      stopFollow();
-      $('infoPanel').classList.remove('show');
-      selectedName = null;
-      renderList();
-    }
+    if ((e.key==='h'||e.key==='H') && e.target.tagName!=='INPUT') toggleUI();
+    if (e.key==='Escape') { stopFollow(); $('infoPanel').classList.remove('show'); selectedName=null; renderList(); }
   });
 
-  // ========== CONTROLS ==========
-  $('btnHome').onclick = () => {
-    stopFollow();
-    viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(15, 25, 16500000), duration: 1.5 });
-  };
+  // Controls
+  $('btnHome').onclick = () => { stopFollow(); viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(15,25,16000000), duration:1.5 }); };
   $('btnIn').onclick = () => viewer.camera.zoomIn(viewer.camera.positionCartographic.height * 0.25);
   $('btnOut').onclick = () => viewer.camera.zoomOut(viewer.camera.positionCartographic.height * 0.35);
   $('btnFs').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
   $('btnLocate').onclick = () => {
     navigator.geolocation.getCurrentPosition(p => {
       stopFollow();
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(p.coords.longitude, p.coords.latitude, 180000),
-        duration: 1.7
-      });
+      viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(p.coords.longitude, p.coords.latitude, 180000), duration:1.6 });
       toast('Standort gefunden');
     }, () => toast('Standort blockiert'));
   };
-
-  $('closePanel').onclick = () => {
-    $('sidePanel').classList.add('hide');
-    $('openPanel').style.display = 'grid';
-  };
-  $('openPanel').onclick = () => {
-    $('sidePanel').classList.remove('hide');
-    $('openPanel').style.display = 'none';
-  };
-
-  if (innerWidth < 700) {
-    $('sidePanel').classList.add('hide');
-    $('openPanel').style.display = 'grid';
-  }
+  $('closePanel').onclick = () => { $('sidePanel').classList.add('hide'); $('openPanel').style.display='grid'; };
+  $('openPanel').onclick = () => { $('sidePanel').classList.remove('hide'); $('openPanel').style.display='none'; };
+  if (innerWidth < 700) { $('sidePanel').classList.add('hide'); $('openPanel').style.display='grid'; }
 })();
 </script>
 </body>

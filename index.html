@@ -8,677 +8,533 @@
 <link href="https://cesium.com/downloads/cesiumjs/releases/1.124/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
 <style>
-:root {
-  --bg: #02050c;
-  --panel: rgba(8,14,28,0.92);
-  --border: rgba(0,190,255,0.18);
-  --cyan: #00c2ff;
-  --cyan-dim: rgba(0,194,255,0.14);
-  --text: #eef5ff;
-  --muted: #7d8da8;
-  --red: #ff4d6d;
-  --radius: 14px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13.5px; }
-#cesiumContainer { position: absolute; inset: 0; }
-.cesium-viewer-bottom, .cesium-viewer-toolbar, .cesium-viewer-animationContainer,
-.cesium-viewer-timelineContainer, .cesium-viewer-fullscreenContainer,
-.cesium-credit-logoContainer, .cesium-credit-textContainer { display: none !important; }
-
-.glass {
-  background: var(--panel);
-  backdrop-filter: blur(28px) saturate(170%);
-  -webkit-backdrop-filter: blur(28px) saturate(170%);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
-}
-body.ui-hidden .ui { display: none !important; }
-
-/* ===== TOP CENTER SEARCH ===== */
-#topCenter {
-  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
-  z-index: 40; width: min(460px, calc(100vw - 32px));
-}
-.search-box { position: relative; }
-.search-box input {
-  width: 100%; height: 50px; padding: 0 48px 0 18px;
-  background: rgba(0,0,0,0.55); border: 1px solid var(--border);
-  border-radius: 15px; color: var(--text); font-size: 14.5px; outline: none;
-  box-shadow: 0 10px 36px rgba(0,0,0,0.45);
-}
-.search-box input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-dim), 0 10px 36px rgba(0,0,0,0.45); }
-.search-box button {
-  position: absolute; right: 9px; top: 9px; width: 32px; height: 32px;
-  border: none; background: transparent; color: var(--cyan); border-radius: 8px; cursor: pointer;
-}
-#suggestions {
-  position: absolute; top: calc(100% + 8px); left: 0; right: 0;
-  max-height: 340px; overflow-y: auto; display: none; z-index: 50;
-}
-.sug { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.sug:hover { background: rgba(0,194,255,0.1); }
-.sug b { font-weight: 560; font-size: 13.5px; }
-.sug span { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-
-/* ===== LEFT PANEL ===== */
-#sidePanel {
-  position: absolute; top: 82px; left: 16px; z-index: 30;
-  width: 300px; max-height: calc(100vh - 170px); overflow-y: auto;
-  transition: 0.3s cubic-bezier(0.4,0,0.2,1);
-}
-#sidePanel.hide { transform: translateX(-120%); opacity: 0; pointer-events: none; }
-.panelHead {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
-  font-size: 13px; font-weight: 620;
-}
-.panelBody { padding: 12px; }
-.sec { margin-bottom: 16px; }
-.secTitle { font-size: 10px; text-transform: uppercase; letter-spacing: 0.9px; color: var(--muted); margin-bottom: 7px; }
-.item {
-  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
-  border-radius: 10px; cursor: pointer; margin-bottom: 2px; font-size: 13px;
-}
-.item:hover { background: rgba(0,194,255,0.07); }
-.item.active { background: rgba(0,194,255,0.13); }
-.item input { accent-color: var(--cyan); }
-.quick { display: flex; flex-wrap: wrap; gap: 6px; }
-.quick button {
-  padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
-  background: rgba(0,0,0,0.3); color: var(--text); font-size: 12px; cursor: pointer;
-}
-.quick button:hover { border-color: var(--cyan); background: var(--cyan-dim); color: var(--cyan); }
-.satRow {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 10px; background: rgba(0,0,0,0.28); border-radius: 10px;
-  margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.03); cursor: pointer;
-}
-.satRow:hover, .satRow.selected { border-color: rgba(0,194,255,0.35); }
-.satRow .n { font-size: 12.5px; font-weight: 530; }
-.satRow .m { font-size: 10.5px; color: var(--muted); }
-.satRow button { width: 24px; height: 24px; border: none; background: transparent; color: var(--red); border-radius: 6px; cursor: pointer; font-size: 14px; }
-
-/* ===== TOP RIGHT ===== */
-#topRight {
-  position: absolute; top: 16px; right: 16px; z-index: 30;
-  display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
-}
-.card { padding: 10px 14px; min-width: 150px; text-align: right; }
-.card .l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); }
-.card .v { font-size: 16px; font-weight: 650; color: var(--cyan); margin-top: 2px; }
-.card .s { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
-
-/* ===== BOTTOM ===== */
-#bottomLeft {
-  position: absolute; bottom: 16px; left: 16px; z-index: 30;
-  display: flex; flex-direction: column; gap: 7px;
-}
-.coords {
-  display: flex; gap: 16px; padding: 9px 13px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
-}
-.coords span { color: var(--muted); margin-right: 5px; }
-.attr { padding: 7px 12px; font-size: 11px; color: var(--muted); max-width: 400px; }
-
-#controls {
-  position: absolute; bottom: 16px; right: 16px; z-index: 30;
-  display: flex; flex-direction: column; gap: 6px;
-}
-.btn {
-  width: 44px; height: 44px; border-radius: 12px;
-  border: 1px solid var(--border); background: var(--panel);
-  color: var(--text); font-size: 17px; cursor: pointer;
-  display: grid; place-items: center; transition: 0.15s;
-}
-.btn:hover { border-color: var(--cyan); background: var(--cyan-dim); color: var(--cyan); }
-.btn.active { border-color: var(--cyan); background: rgba(0,194,255,0.22); color: var(--cyan); }
-
-#openPanel { position: absolute; top: 82px; left: 16px; z-index: 31; display: none; }
-
-#infoPanel {
-  position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
-  z-index: 45; width: min(340px, calc(100vw - 32px)); display: none;
-}
-#infoPanel.show { display: block; }
-.infoHead {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.infoHead h3 { font-size: 14px; font-weight: 620; }
-.infoBody { padding: 11px 14px 13px; font-size: 13px; }
-.infoRow { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
-.infoRow .k { color: var(--muted); }
-.infoRow .v { font-family: ui-monospace, monospace; font-size: 12.5px; }
-
-#toast {
-  position: absolute; top: 90px; left: 50%; transform: translateX(-50%) translateY(-12px);
-  z-index: 100; padding: 11px 20px; border-radius: 12px;
-  background: rgba(8,14,28,0.96); border: 1px solid var(--border);
-  font-size: 13px; opacity: 0; pointer-events: none; transition: 0.25s;
-}
-#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-thumb { background: rgba(0,194,255,0.25); border-radius: 4px; }
-
-@media (max-width: 700px) {
-  #sidePanel { top: auto; bottom: 90px; left: 12px; right: 12px; width: auto; max-height: 48vh; }
-  #sidePanel.hide { transform: translateY(120%); }
-  #openPanel { display: grid; top: auto; bottom: 90px; left: 12px; }
-  #topCenter { width: calc(100vw - 28px); }
-}
+:root{--bg:#02050c;--panel:rgba(8,14,28,.9);--border:rgba(0,190,255,.2);--cyan:#00c2ff;--dim:rgba(0,194,255,.14);--text:#eef5ff;--muted:#7d8da8;--red:#ff4d6d;--green:#2ce59b;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:13.5px Inter,-apple-system,"Segoe UI",Roboto,sans-serif}
+#cesiumContainer{position:absolute;inset:0}
+.cesium-viewer-bottom,.cesium-viewer-toolbar,.cesium-viewer-animationContainer,.cesium-viewer-timelineContainer,.cesium-viewer-fullscreenContainer{display:none!important}
+.glass{background:var(--panel);backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 16px 48px rgba(0,0,0,.5)}
+body.ui-hidden .ui{display:none!important}
+button{font:inherit;color:inherit}
+#topCenter{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:40;width:min(460px,calc(100vw - 32px))}
+.search-box{position:relative}
+.search-box input{width:100%;height:50px;padding:0 48px 0 18px;background:rgba(0,0,0,.55);border:1px solid var(--border);border-radius:15px;color:var(--text);font-size:14.5px;outline:none}
+.search-box input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px var(--dim)}
+.search-box button{position:absolute;right:9px;top:9px;width:32px;height:32px;border:0;background:none;color:var(--cyan);font-size:18px;cursor:pointer}
+#suggestions{position:absolute;top:calc(100% + 8px);left:0;right:0;max-height:340px;overflow-y:auto;display:none}
+.sug{padding:11px 16px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04)}
+.sug:hover{background:rgba(0,194,255,.1)}
+.sug b{font-weight:560}.sug span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+#sidePanel{position:absolute;top:82px;left:16px;z-index:30;width:310px;max-height:calc(100vh - 170px);display:flex;flex-direction:column;transition:.3s cubic-bezier(.4,0,.2,1)}
+#sidePanel.hide{transform:translateX(-120%);opacity:0;pointer-events:none}
+.panelHead{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.06);font-weight:620}
+.tabs{display:flex;gap:4px;padding:8px 10px 0}
+.tabs button{flex:1;padding:7px 0;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);cursor:pointer}
+.tabs button.on{color:var(--cyan);border-color:var(--cyan)}
+.tabc{display:none;padding:12px;overflow-y:auto}.tabc.on{display:block}
+.sec{margin-bottom:14px}.secTitle{font-size:11.5px;color:var(--muted);margin-bottom:6px}
+.item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;cursor:pointer;font-size:13px}
+.item:hover{background:rgba(0,194,255,.07)}.item.active{background:rgba(0,194,255,.13)}
+.item input{accent-color:var(--cyan)}
+.quick{display:flex;flex-wrap:wrap;gap:6px}
+.quick button,.pill{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(0,0,0,.3);cursor:pointer;font-size:12px}
+.quick button:hover,.pill:hover{border-color:var(--cyan);background:var(--dim);color:var(--cyan)}
+.row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(0,0,0,.28);border-radius:10px;margin-bottom:4px;border:1px solid rgba(255,255,255,.03);cursor:pointer}
+.row:hover,.row.selected{border-color:rgba(0,194,255,.4)}
+.row .n{font-size:12.5px;font-weight:540}.row .m{font-size:11px;color:var(--muted)}
+.row .x{width:24px;height:24px;border:0;background:none;color:var(--red);cursor:pointer;font-size:15px}
+.badge{font-size:10.5px;padding:2px 7px;border-radius:20px;background:rgba(44,229,155,.15);color:var(--green)}
+.hint{font-size:12px;color:var(--muted);line-height:1.5}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+#topRight{position:absolute;top:16px;right:16px;z-index:30;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.card{padding:9px 14px;min-width:140px;text-align:right}
+.card .l{font-size:11px;color:var(--muted)}.card .v{font-size:16px;font-weight:650;color:var(--cyan);margin-top:2px}.card .s{font-size:11.5px;color:var(--muted)}
+#bottomLeft{position:absolute;bottom:16px;left:16px;z-index:30;display:flex;flex-direction:column;gap:7px}
+.coords{display:flex;gap:16px;padding:9px 13px;font:12px ui-monospace,Menlo,monospace}.coords span{color:var(--muted);margin-right:5px}
+.attr{padding:7px 12px;font-size:11px;color:var(--muted)}
+#timeBar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:30;padding:8px 10px;display:flex;align-items:center;gap:6px}
+#timeBar .clk{font:12.5px ui-monospace,Menlo,monospace;padding:0 8px;min-width:150px;text-align:center}
+#timeBar button{padding:7px 10px;border:1px solid transparent;border-radius:9px;background:none;cursor:pointer;font-size:12.5px}
+#timeBar button:hover{background:var(--dim)}#timeBar button.on{border-color:var(--cyan);color:var(--cyan);background:var(--dim)}
+#controls{position:absolute;bottom:16px;right:16px;z-index:30;display:flex;flex-direction:column;gap:6px}
+.btn{width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--panel);font-size:17px;cursor:pointer;display:grid;place-items:center}
+.btn:hover{border-color:var(--cyan);background:var(--dim);color:var(--cyan)}.btn.active{border-color:var(--cyan);background:rgba(0,194,255,.22);color:var(--cyan)}
+#openPanel{position:absolute;top:82px;left:16px;z-index:31;display:none}
+#infoPanel{position:absolute;top:80px;left:50%;transform:translateX(-50%);z-index:45;width:min(340px,calc(100vw - 32px));display:none}
+#infoPanel.show{display:block}
+.infoHead{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+.infoHead h3{font-size:14px;font-weight:620}
+.infoBody{padding:10px 14px 12px}
+.infoRow{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.infoRow .k{color:var(--muted)}.infoRow .v{font:12.5px ui-monospace,monospace}
+.acts{display:flex;gap:6px;margin-top:10px}.acts .pill{flex:1;text-align:center}
+#toast{position:absolute;top:90px;left:50%;transform:translateX(-50%) translateY(-12px);z-index:100;padding:11px 20px;border-radius:12px;background:rgba(8,14,28,.96);border:1px solid var(--border);opacity:0;pointer-events:none;transition:.25s}
+#toast.show{opacity:1;transform:translateX(-50%)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(0,194,255,.25);border-radius:4px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+@media(max-width:700px){
+#sidePanel{top:auto;bottom:80px;left:12px;right:12px;width:auto;max-height:48vh}
+#sidePanel.hide{transform:translateY(120%)}
+#openPanel{top:auto;bottom:80px;left:12px}
+#topCenter{width:calc(100vw - 28px)}
+#bottomLeft{display:none}
+#timeBar{left:12px;right:68px;transform:none;overflow-x:auto;gap:2px}
+#timeBar .clk{min-width:118px;font-size:11.5px}
+#topRight{top:76px}.card{min-width:0;padding:7px 10px}
+#infoPanel{top:130px}}
 </style>
 </head>
 <body>
 <div id="cesiumContainer"></div>
 
-<!-- TOP CENTER SEARCH -->
 <div id="topCenter" class="ui">
   <div class="search-box">
-    <input id="search" placeholder="Stadt oder Satellit suchen (ISS, Hubble, Starlink…)" autocomplete="off">
-    <button id="searchBtn">⌕</button>
+    <input id="search" placeholder="Satellit (Name, NORAD-ID) oder Ort suchen" autocomplete="off">
+    <button id="searchBtn" aria-label="Suchen">⌕</button>
     <div id="suggestions" class="glass"></div>
   </div>
 </div>
 
-<!-- LEFT PANEL -->
 <div id="sidePanel" class="glass ui">
-  <div class="panelHead">
-    <span>ORBIT LIVE</span>
-    <button style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer" id="closePanel">×</button>
-  </div>
-  <div class="panelBody">
-    <div class="sec">
-      <div class="secTitle">Basiskarte</div>
+  <div class="panelHead"><span>ORBIT LIVE</span><button style="background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer" id="closePanel" aria-label="Schließen">×</button></div>
+  <div class="tabs"><button class="on" data-tab="map">Karte</button><button data-tab="sats">Satelliten</button><button data-tab="pass">Überflüge</button></div>
+
+  <div class="tabc on" id="tab-map">
+    <div class="sec"><div class="secTitle">Basiskarte</div>
       <div class="item active" data-base="sat"><input type="radio" name="base" checked> Satellitenbild</div>
       <div class="item" data-base="osm"><input type="radio" name="base"> Straßenkarte</div>
-      <div class="item" data-base="dark"><input type="radio" name="base"> Dark</div>
-    </div>
-    <div class="sec">
-      <div class="secTitle">Darstellung</div>
-      <div class="item"><input type="checkbox" id="chkOrbits" checked> Orbit-Linien</div>
-      <div class="item"><input type="checkbox" id="chkGround"> Ground Track</div>
+      <div class="item" data-base="dark"><input type="radio" name="base"> Dunkel</div></div>
+    <div class="sec"><div class="secTitle">Darstellung</div>
+      <div class="item"><input type="checkbox" id="chkCloud" checked> Alle Satelliten als Punkte</div>
+      <div class="item"><input type="checkbox" id="chkOrbits" checked> Bahnen</div>
+      <div class="item"><input type="checkbox" id="chkFoot" checked> Sichtfeld am Boden</div>
       <div class="item"><input type="checkbox" id="chkLabels" checked> Namen</div>
-    </div>
-    <div class="sec">
-      <div class="secTitle">Overlays</div>
-      <div class="item"><input type="checkbox" id="chkRain"> Niederschlag</div>
-      <div class="item"><input type="checkbox" id="chkWind"> Wind</div>
-    </div>
-    <div class="sec">
-      <div class="secTitle">Schnell laden</div>
+      <div class="item"><input type="checkbox" id="chkRain"> Niederschlagsradar</div>
+      <div class="legend"><span><i style="background:#00c2ff"></i>Starlink</span><span><i style="background:#b794f4"></i>OneWeb</span><span><i style="background:#2ce59b"></i>Navigation</span><span><i style="background:#ffb020"></i>Wetter</span><span><i style="background:#cfe3ff"></i>Sonstige</span></div></div>
+  </div>
+
+  <div class="tabc" id="tab-sats">
+    <div class="sec"><div class="secTitle">Schnell hinzufügen</div>
       <div class="quick">
-        <button data-g="iss">ISS</button>
-        <button data-g="hst">Hubble</button>
-        <button data-g="css">Tiangong</button>
-        <button data-g="starlink">Starlink</button>
-        <button data-g="weather">Wetter</button>
-        <button data-g="visual">Hell</button>
-        <button data-g="stations">Stationen</button>
-      </div>
-    </div>
-    <div class="sec">
-      <div class="secTitle">Aktive Satelliten <span id="satCount" style="color:var(--cyan)"></span></div>
+        <button data-q="iss">ISS</button><button data-q="hst">Hubble</button><button data-q="css">Tiangong</button>
+        <button data-q="starlink">Starlink</button><button data-q="weather">Wetter</button><button data-q="gps">GPS</button>
+      </div></div>
+    <div class="sec"><div class="secTitle">Verfolgt <span id="satCount" style="color:var(--cyan)"></span></div>
       <div id="satList"></div>
-      <button class="quick" style="width:100%;margin-top:8px;justify-content:center" id="clearSats">Alle entfernen</button>
-    </div>
+      <div class="quick" style="margin-top:8px"><button id="clearSats">Alle entfernen</button></div></div>
+  </div>
+
+  <div class="tabc" id="tab-pass">
+    <div class="hint" id="passHint">Wähle einen Satelliten und tippe auf „Überflüge“. Berechnet werden die nächsten 24 Stunden über deinem Standort, ab 10° Höhe.</div>
+    <div id="passList" style="margin-top:8px"></div>
   </div>
 </div>
-<button class="btn ui" id="openPanel">☰</button>
+<button class="btn ui" id="openPanel" aria-label="Menü">☰</button>
 
-<!-- TOP RIGHT -->
 <div id="topRight" class="ui">
-  <div class="glass card">
-    <div class="l">Temperatur</div>
-    <div class="v" id="temp">–</div>
-    <div class="s" id="wSub">Lade…</div>
-  </div>
-  <div class="glass card" style="min-width:120px">
-    <div class="l">Status</div>
-    <div class="v" id="status" style="font-size:12.5px;color:var(--text)">Starte…</div>
-  </div>
-  <div class="glass card" style="min-width:110px">
-    <div class="l">Satelliten</div>
-    <div class="v" id="liveCount" style="font-size:15px">0</div>
-  </div>
+  <div class="glass card"><div class="l">Temperatur</div><div class="v" id="temp">–</div><div class="s" id="wSub">Lade…</div></div>
+  <div class="glass card"><div class="l">Status</div><div class="v" id="status" style="font-size:12.5px;color:var(--text)">Starte…</div></div>
+  <div class="glass card"><div class="l">Im Katalog</div><div class="v" id="liveCount" style="font-size:15px">0</div></div>
 </div>
 
-<!-- BOTTOM -->
 <div id="bottomLeft" class="ui">
-  <div class="glass coords">
-    <div><span>LAT</span><b id="lat">–</b></div>
-    <div><span>LON</span><b id="lon">–</b></div>
-    <div><span>ALT</span><b id="alt">–</b></div>
-  </div>
+  <div class="glass coords"><div><span>LAT</span><b id="lat">–</b></div><div><span>LON</span><b id="lon">–</b></div><div><span>ALT</span><b id="alt">–</b></div></div>
   <div class="glass attr">Esri · CelesTrak · satellite.js · Open-Meteo · RainViewer</div>
 </div>
 
+<div id="timeBar" class="glass ui">
+  <button id="tRev" title="Rückwärts">⏪</button>
+  <button id="tPlay" title="Pause (Leertaste)">⏸</button>
+  <div class="clk" id="clk">–</div>
+  <button data-sp="1">1×</button><button data-sp="10">10×</button><button data-sp="100">100×</button><button data-sp="1000">1000×</button>
+  <button id="tLive" class="on">Live</button>
+</div>
+
 <div id="controls" class="ui">
-  <button class="btn" id="btnFollow" title="Follow">◎</button>
+  <button class="btn" id="btnFollow" title="Folgen">◎</button>
   <button class="btn" id="btnHideUI" title="UI aus (H)">◻</button>
   <button class="btn" id="btnHome" title="Welt">⌂</button>
-  <button class="btn" id="btnLocate" title="Standort">⌖</button>
-  <button class="btn" id="btnFs">⛶</button>
+  <button class="btn" id="btnLocate" title="Mein Standort">⌖</button>
+  <button class="btn" id="btnFs" title="Vollbild">⛶</button>
   <button class="btn" id="btnIn">+</button>
   <button class="btn" id="btnOut">−</button>
 </div>
 
 <div id="infoPanel" class="glass ui">
-  <div class="infoHead">
-    <h3 id="infoName">–</h3>
-    <button style="background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer" id="closeInfo">×</button>
-  </div>
-  <div class="infoBody" id="infoBody"></div>
+  <div class="infoHead"><h3 id="infoName">–</h3><button style="background:none;border:0;color:var(--muted);font-size:17px;cursor:pointer" id="closeInfo" aria-label="Schließen">×</button></div>
+  <div class="infoBody"><div id="infoBody"></div>
+    <div class="acts"><button class="pill" id="aFollow">Folgen</button><button class="pill" id="aPass">Überflüge</button><button class="pill" id="aDel">Entfernen</button></div></div>
 </div>
 <div id="toast"></div>
 
 <script>
 (function(){
-  'use strict';
-  Cesium.Ion.defaultAccessToken = undefined;
+'use strict';
+Cesium.Ion.defaultAccessToken=undefined;
+const $=id=>document.getElementById(id), RE=6371, rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
+const C3=Cesium.Cartesian3;
 
-  const viewer = new Cesium.Viewer('cesiumContainer', {
-    animation:false, timeline:false, baseLayerPicker:false, geocoder:false,
-    homeButton:false, sceneModePicker:false, navigationHelpButton:false,
-    fullscreenButton:false, infoBox:false, selectionIndicator:false,
-    terrainProvider: new Cesium.EllipsoidTerrainProvider(), baseLayer:false
-  });
+/* ---------- Viewer & Optik ---------- */
+const viewer=new Cesium.Viewer('cesiumContainer',{animation:false,timeline:false,baseLayerPicker:false,geocoder:false,homeButton:false,sceneModePicker:false,navigationHelpButton:false,fullscreenButton:false,infoBox:false,selectionIndicator:false,terrainProvider:new Cesium.EllipsoidTerrainProvider(),baseLayer:false,shouldAnimate:false});
+const scene=viewer.scene, globe=scene.globe;
+globe.enableLighting=true; globe.showGroundAtmosphere=true; globe.atmosphereLightIntensity=30;
+globe.baseColor=Cesium.Color.fromCssColorString('#04101f');
+scene.skyAtmosphere.show=true; scene.skyAtmosphere.brightnessShift=.1;
+scene.fog.enabled=true; scene.sun.show=true; scene.moon.show=true;
+scene.postProcessStages.bloom.enabled=true;
+const ctrl=scene.screenSpaceCameraController; ctrl.minimumZoomDistance=3000; ctrl.maximumZoomDistance=6e7;
+const esri=new Cesium.UrlTemplateImageryProvider({url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',maximumLevel:19});
+let baseL=viewer.imageryLayers.addImageryProvider(esri);
+viewer.camera.setView({destination:C3.fromDegrees(15,25,16000000)});
 
-  const scene = viewer.scene;
-  scene.globe.enableLighting = true;
-  scene.globe.atmosphereLightIntensity = 30;
-  scene.globe.showGroundAtmosphere = true;
-  scene.skyAtmosphere.show = true;
-  scene.skyAtmosphere.brightnessShift = 0.08;
-  scene.fog.enabled = true;
-  scene.sun.show = true;
-  scene.moon.show = true;
-  scene.screenSpaceCameraController.minimumZoomDistance = 50000;
-  scene.screenSpaceCameraController.maximumZoomDistance = 55000000;
+const toast=m=>{const t=$('toast');t.textContent=m;t.className='show';clearTimeout(toast.t);toast.t=setTimeout(()=>t.className='',2600)};
+const status=t=>$('status').textContent=t;
 
-  const esri = new Cesium.UrlTemplateImageryProvider({
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    maximumLevel: 19
-  });
-  viewer.imageryLayers.addImageryProvider(esri);
-  viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(15, 25, 16000000) });
+/* ---------- Zeitsteuerung ---------- */
+let simMs=Date.now(), speed=1, paused=false, live=true, lastT=performance.now();
+const fmt=ms=>new Date(ms).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+function timeUI(){
+  $('clk').textContent=fmt(simMs);
+  $('tLive').classList.toggle('on',live);
+  $('tPlay').textContent=paused?'▶':'⏸';
+  document.querySelectorAll('[data-sp]').forEach(b=>b.classList.toggle('on',!live&&!paused&&speed===+b.dataset.sp));
+  $('tRev').classList.toggle('on',!live&&!paused&&speed<0);
+}
+document.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{live=false;paused=false;speed=+b.dataset.sp});
+$('tRev').onclick=()=>{live=false;paused=false;speed=-Math.abs(speed===1||live?100:speed)};
+$('tPlay').onclick=()=>{if(live){live=false}paused=!paused};
+$('tLive').onclick=()=>{live=true;paused=false;speed=1;simMs=Date.now()};
 
-  // Better satellite icon
-  function makeIcon(color) {
-    const c = document.createElement('canvas');
-    c.width = 40; c.height = 40;
-    const ctx = c.getContext('2d');
-    ctx.translate(20, 20);
-    ctx.fillStyle = color;
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.moveTo(0, -13);
-    ctx.lineTo(5.5, 3);
-    ctx.lineTo(2.5, 11);
-    ctx.lineTo(-2.5, 11);
-    ctx.lineTo(-5.5, 3);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-    ctx.fillRect(-15, -1, 9, 6);
-    ctx.fillRect(6, -1, 9, 6);
-    ctx.strokeRect(-15, -1, 9, 6);
-    ctx.strokeRect(6, -1, 9, 6);
-    return c.toDataURL();
-  }
+/* ---------- Katalog (CelesTrak „active“) ---------- */
+const cat=[]; let cloud=null, cursor=0;
+const grpColor=n=>/STARLINK/.test(n)?'#00c2ff':/ONEWEB/.test(n)?'#b794f4':/GPS|NAVSTAR|GLONASS|GALILEO|BEIDOU/.test(n)?'#2ce59b':/NOAA|METOP|GOES|METEOSAT|FENGYUN|HIMAWARI/.test(n)?'#ffb020':'#cfe3ff';
 
-  const sats = {};
-  const colors = ['#00c2ff','#ff4d6d','#2ce59b','#ffb020','#b794f4','#f687b3','#4fd1c5','#f6ad55'];
-  let colorIdx = 0, showOrbits = true, showGround = false, showLabels = true;
-  let followName = null, selectedName = null, rainL = null, windL = null;
-
-  const $ = id => document.getElementById(id);
-  const toast = m => { const t=$('toast'); t.textContent=m; t.className='show'; setTimeout(()=>t.className='',2500); };
-  const status = t => $('status').textContent = t;
-
-  // Layers
-  document.querySelectorAll('[data-base]').forEach(el => {
-    el.onclick = () => {
-      document.querySelectorAll('[data-base]').forEach(x=>x.classList.remove('active'));
-      el.classList.add('active'); el.querySelector('input').checked = true;
-      viewer.imageryLayers.removeAll();
-      if (el.dataset.base==='sat') viewer.imageryLayers.addImageryProvider(esri);
-      else if (el.dataset.base==='osm') viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',maximumLevel:19}));
-      else viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({url:'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',maximumLevel:19}));
-    };
-  });
-
-  $('chkOrbits').onchange = e => { showOrbits = e.target.checked; Object.values(sats).forEach(s => { if(s.orbit) s.orbit.show = showOrbits; }); };
-  $('chkGround').onchange = e => { showGround = e.target.checked; Object.values(sats).forEach(s => { if(s.ground) s.ground.show = showGround; }); };
-  $('chkLabels').onchange = e => { showLabels = e.target.checked; Object.values(sats).forEach(s => { if(s.entity.label) s.entity.label.show = showLabels; }); };
-
-  $('chkRain').onchange = async e => {
-    if (e.target.checked) {
-      try {
-        const r = await fetch('https://api.rainviewer.com/public/weather-maps.json');
-        const d = await r.json();
-        const path = d.radar.past.at(-1).path;
-        rainL = viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
-          url: `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/2/1_1.png`, maximumLevel:12
-        }));
-        rainL.alpha = 0.5; toast('Radar aktiv');
-      } catch { e.target.checked=false; toast('Radar offline'); }
-    } else if (rainL) { viewer.imageryLayers.remove(rainL); rainL=null; }
-  };
-
-  $('chkWind').onchange = e => {
-    if (e.target.checked) {
-      const d = new Date();
-      const key = `${d.getUTCFullYear()}${String(d.getUTCMonth()+1).padStart(2,'0')}${String(d.getUTCDate()).padStart(2,'0')}${String(d.getUTCHours()).padStart(2,'0')}`;
-      windL = viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
-        url: `https://weathermaps.weatherapi.com/wind/tiles/${key}/{z}/{x}/{y}.png`, maximumLevel:8
-      }));
-      windL.alpha = 0.55; toast('Wind aktiv');
-    } else if (windL) { viewer.imageryLayers.remove(windL); windL=null; }
-  };
-
-  function buildTracks(satrec, color) {
-    const orbitPos = [], groundPos = [];
-    const now = new Date();
-    for (let min = 0; min <= 110; min += 1) {
-      const t = new Date(now.getTime() + min * 60000);
-      try {
-        const pv = satellite.propagate(satrec, t);
-        if (!pv.position) continue;
-        const gmst = satellite.gstime(t);
-        const geo = satellite.eciToGeodetic(pv.position, gmst);
-        const lon = satellite.degreesLong(geo.longitude);
-        const lat = satellite.degreesLat(geo.latitude);
-        const alt = geo.height * 1000;
-        orbitPos.push(Cesium.Cartesian3.fromDegrees(lon, lat, alt));
-        groundPos.push(Cesium.Cartesian3.fromDegrees(lon, lat, 0));
-      } catch {}
+async function loadCatalog(){
+  status('Lade Katalog…');
+  try{
+    const t=await (await fetch('https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle')).text();
+    const L=t.trim().split(/\r?\n/);
+    for(let i=0;i+2<L.length;i+=3){
+      const l1=L[i+1].trim(), l2=L[i+2].trim();
+      try{cat.push({name:L[i].trim(),id:l1.substr(2,5).trim(),rec:satellite.twoline2satrec(l1,l2)})}catch{}
     }
-    const orbit = viewer.entities.add({
-      polyline: { positions: orbitPos, width: 1.6, material: Cesium.Color.fromCssColorString(color).withAlpha(0.48) },
-      show: showOrbits
-    });
-    const ground = viewer.entities.add({
-      polyline: { positions: groundPos, width: 1.2, material: Cesium.Color.fromCssColorString(color).withAlpha(0.28), clampToGround: true },
-      show: showGround
-    });
-    return { orbit, ground };
+    $('liveCount').textContent=cat.length.toLocaleString('de-DE');
+    cloud=scene.primitives.add(new Cesium.PointPrimitiveCollection());
+    cat.forEach((c,i)=>cloud.add({position:C3.ZERO,pixelSize:3,color:Cesium.Color.fromCssColorString(grpColor(c.name)).withAlpha(.9),id:i}));
+    cloud.show=$('chkCloud').checked;
+    updateCloud(0,cat.length);
+    status('Bereit');
+    const iss=cat.find(c=>/ISS \(ZARYA\)/.test(c.name))||cat[0];
+    if(iss&&!Object.keys(tracked).length) select(track(iss),true);
+  }catch{status('Offline');toast('Katalog nicht erreichbar – CelesTrak prüfen')}
+}
+function updateCloud(a,b){
+  if(!cloud) return;
+  const d=new Date(simMs), g=satellite.gstime(d);
+  for(let i=a;i<b&&i<cat.length;i++){
+    const pv=satellite.propagate(cat[i].rec,d);
+    if(!pv.position) continue;
+    const e=satellite.eciToEcf(pv.position,g);
+    cloud.get(i).position=new C3(e.x*1e3,e.y*1e3,e.z*1e3);
   }
+}
 
-  function addSat(name, tle1, tle2) {
-    if (sats[name]) return false;
-    let satrec;
-    try { satrec = satellite.twoline2satrec(tle1.trim(), tle2.trim()); } catch { return false; }
-    const color = colors[colorIdx++ % colors.length];
-    const icon = makeIcon(color);
+/* ---------- Verfolgte Satelliten ---------- */
+const tracked={}, palette=['#00c2ff','#ff4d6d','#2ce59b','#ffb020','#b794f4','#f687b3','#4fd1c5','#f6ad55'];
+let ci=0, selKey=null, followKey=null;
+const flags={orbits:true,foot:true,labels:true};
 
-    const entity = viewer.entities.add({
-      name,
-      position: Cesium.Cartesian3.fromDegrees(0,0,400000),
-      billboard: {
-        image: icon, width: 28, height: 28,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        scaleByDistance: new Cesium.NearFarScalar(5e4, 1.3, 1.2e7, 0.4)
-      },
-      label: {
-        text: name, font: '12px Inter, sans-serif',
-        fillColor: Cesium.Color.WHITE, outlineColor: Cesium.Color.BLACK, outlineWidth: 3,
-        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -18),
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        scaleByDistance: new Cesium.NearFarScalar(5e4, 1, 9e6, 0.3),
-        show: showLabels
-      }
-    });
-
-    const tracks = buildTracks(satrec, color);
-    sats[name] = { satrec, entity, orbit: tracks.orbit, ground: tracks.ground, color, last: null };
-    renderList();
-    return true;
+const kindOf=n=>/ISS|ZARYA|CSS|TIANHE|WENTIAN|MENGTIAN|TIANGONG/.test(n)?'station':/^HST/.test(n)?'telescope':/STARLINK/.test(n)?'starlink':/NAVSTAR|GPS|GLONASS|GALILEO|BEIDOU/.test(n)?'nav':/NOAA|METOP|GOES|METEOSAT|FENGYUN|HIMAWARI/.test(n)?'weather':'generic';
+function icon(col,k){
+  const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');
+  x.translate(32,32);x.lineJoin='round';
+  const panel=(px,py,w,h)=>{x.shadowBlur=0;x.fillStyle='#2458b8';x.fillRect(px,py,w,h);x.strokeStyle='rgba(255,255,255,.4)';x.lineWidth=.8;
+    for(let i=1;i<3;i++){x.beginPath();x.moveTo(px+w*i/3,py);x.lineTo(px+w*i/3,py+h);x.stroke()}
+    x.strokeStyle='#fff';x.lineWidth=1.6;x.strokeRect(px,py,w,h)};
+  const body=(px,py,w,h,r)=>{x.shadowColor=col;x.shadowBlur=12;x.fillStyle=col;x.strokeStyle='#fff';x.lineWidth=1.8;x.beginPath();x.roundRect(px,py,w,h,r);x.fill();x.stroke()};
+  if(k==='station'){x.fillStyle='#cfd6e0';x.fillRect(-27,-1.5,54,3);[-27,-14,8,21].forEach(px=>panel(px,-14,6,28));body(-5,-11,10,22,3)}
+  else if(k==='telescope'){panel(-27,-7,15,14);panel(12,-7,15,14);body(-7,-20,14,40,3);x.fillStyle='#0b1220';x.beginPath();x.ellipse(0,-20,5.5,2.5,0,0,7);x.fill()}
+  else if(k==='starlink'){panel(5,-22,20,44);body(-10,-7,14,14,2)}
+  else if(k==='nav'){panel(-28,-7,18,14);panel(10,-7,18,14);body(-7,-12,14,22,3);x.fillStyle='#fff';x.beginPath();x.arc(0,15,5,0,7);x.fill()}
+  else if(k==='weather'){panel(10,-8,18,16);body(-9,-13,18,26,3);x.fillStyle='#fff';x.beginPath();x.arc(0,-13,5,Math.PI,0);x.fill()}
+  else{panel(-28,-6,18,12);panel(10,-6,18,12);body(-6,-12,12,24,3)}
+  return c.toDataURL();
+}
+const PN='P', M={
+  generic:[[0,0,0,1,1,1,'#d9b24c'],[0,1.9,0,.9,2.2,.05,PN],[0,-1.9,0,.9,2.2,.05,PN]],
+  station:[[0,0,0,2.2,.5,.5,'#e8edf5'],[0,0,0,.18,7,.18,'#9aa5b5'],[0,2.9,0,1,1.5,.04,PN],[0,-2.9,0,1,1.5,.04,PN],[0,1.4,0,1,1.5,.04,PN],[0,-1.4,0,1,1.5,.04,PN]],
+  telescope:[[0,0,0,2.4,.9,.9,'#cfd6e0'],[1.25,0,0,.2,.8,.8,'#111827'],[-.3,1.6,0,.8,1.6,.04,PN],[-.3,-1.6,0,.8,1.6,.04,PN]],
+  starlink:[[0,0,0,.5,.9,.14,'#d9d9df'],[0,2.1,0,1.3,2.6,.04,PN]],
+  nav:[[0,0,0,1.1,.9,.9,'#d9b24c'],[0,1.8,0,.9,1.8,.04,PN],[0,-1.8,0,.9,1.8,.04,PN],[0,0,-.7,.5,.5,.35,'#bbbbbb']],
+  weather:[[0,0,0,1.2,.9,1,'#d9d9df'],[0,1.9,0,.9,2,.04,PN],[0,0,.75,.5,.5,.5,'#888888']]};
+function makeParts(s){
+  s.kind=kindOf(s.c.name);
+  s.parts=M[s.kind].map(d=>{
+    const p={d,pos:new C3()};
+    p.e=viewer.entities.add({show:false,position:new Cesium.CallbackProperty(()=>p.pos,false),orientation:new Cesium.CallbackProperty(()=>s.q,false),
+      box:{dimensions:new Cesium.CallbackProperty(()=>new C3(d[3]*s.u,d[4]*s.u,d[5]*s.u),false),material:Cesium.Color.fromCssColorString(d[6]===PN?'#2458b8':d[6]),outline:true,outlineColor:Cesium.Color.WHITE.withAlpha(.35)}});
+    return p});
+}
+const ring=viewer.entities.add({show:false,position:new Cesium.CallbackProperty(()=>tracked[selKey]?tracked[selKey].pos:C3.ZERO,false),
+  billboard:{image:(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.strokeStyle='#00c2ff';x.lineWidth=2.5;x.shadowColor='#00c2ff';x.shadowBlur=8;
+    [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([a,b])=>{x.beginPath();x.moveTo(32+a*26,32+b*14);x.lineTo(32+a*26,32+b*26);x.lineTo(32+a*14,32+b*26);x.stroke()});return c.toDataURL()})(),
+    width:64,height:64,scale:new Cesium.CallbackProperty(()=>1+.1*Math.sin(performance.now()/280),false),disableDepthTestDistance:Infinity}});
+function track(c){
+  if(tracked[c.id]) return tracked[c.id];
+  const col=palette[ci++%palette.length], cc=Cesium.Color.fromCssColorString(col), k=kindOf(c.name);
+  const s={c,col,key:c.id,pos:C3.fromDegrees(0,0,400000),gpos:C3.fromDegrees(0,0,0),rad:1e6,line:[],built:-1e15,lat:0,lon:0,alt:0,v:0,bearing:0,u:1,q:Cesium.Quaternion.clone(Cesium.Quaternion.IDENTITY)};
+  s.entity=viewer.entities.add({name:c.name,position:new Cesium.CallbackProperty(()=>s.pos,false),
+    billboard:{image:icon(col,k),width:40,height:40,rotation:new Cesium.CallbackProperty(()=>-s.bearing,false),distanceDisplayCondition:new Cesium.DistanceDisplayCondition(3.6e6,Number.MAX_VALUE),disableDepthTestDistance:Infinity,scaleByDistance:new Cesium.NearFarScalar(5e6,1.2,3e7,.55)},
+    label:{text:new Cesium.CallbackProperty(()=>c.name+'\n'+Math.round(s.alt)+' km',false),font:'12px Inter,sans-serif',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.BLACK,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,verticalOrigin:Cesium.VerticalOrigin.BOTTOM,pixelOffset:new Cesium.Cartesian2(0,-26),disableDepthTestDistance:Infinity,scaleByDistance:new Cesium.NearFarScalar(5e4,1,2e7,.5),show:flags.labels}});
+  s.entity.satKey=c.id;
+  s.orbit=viewer.entities.add({show:flags.orbits,polyline:{positions:new Cesium.CallbackProperty(()=>s.line,false),width:6,material:new Cesium.PolylineGlowMaterialProperty({glowPower:.2,color:cc.withAlpha(.85)})}});
+  s.foot=viewer.entities.add({show:flags.foot,position:new Cesium.CallbackProperty(()=>s.gpos,false),ellipse:{semiMajorAxis:new Cesium.CallbackProperty(()=>s.rad,false),semiMinorAxis:new Cesium.CallbackProperty(()=>s.rad,false),height:0,material:cc.withAlpha(.07),outline:true,outlineColor:cc.withAlpha(.55)}});
+  makeParts(s);
+  tracked[c.id]=s; renderList(); return s;
+}
+function untrack(key){
+  const s=tracked[key]; if(!s) return;
+  [s.entity,s.orbit,s.foot,...s.parts.map(p=>p.e)].forEach(e=>viewer.entities.remove(e));
+  if(followKey===key) stopFollow();
+  if(selKey===key){selKey=null;$('infoPanel').classList.remove('show')}
+  delete tracked[key]; renderList();
+}
+const tmpV=new C3();
+function updateTracked(s){
+  const d=new Date(simMs), pv=satellite.propagate(s.c.rec,d);
+  if(!pv.position) return;
+  const e=satellite.eciToEcf(pv.position,satellite.gstime(d));
+  C3.fromElements(e.x*1e3,e.y*1e3,e.z*1e3,s.pos);
+  const g=Cesium.Cartographic.fromCartesian(s.pos);
+  s.lat=deg(g.latitude);s.lon=deg(g.longitude);s.alt=g.height/1e3;
+  s.v=Math.hypot(pv.velocity.x,pv.velocity.y,pv.velocity.z);
+  C3.fromRadians(g.longitude,g.latitude,0,undefined,s.gpos);
+  s.rad=RE*Math.acos(RE/(RE+Math.max(s.alt,1)))*1e3;
+  const d2=new Date(simMs+(!live&&speed<0?-2000:2000)), pv2=satellite.propagate(s.c.rec,d2);
+  if(pv2.position){
+    const e2=satellite.eciToEcf(pv2.position,satellite.gstime(d2));
+    const dv=new C3(e2.x*1e3-s.pos.x,e2.y*1e3-s.pos.y,e2.z*1e3-s.pos.z);
+    const inv=Cesium.Matrix4.inverseTransformation(Cesium.Transforms.eastNorthUpToFixedFrame(s.pos),new Cesium.Matrix4());
+    const l=Cesium.Matrix4.multiplyByPointAsVector(inv,dv,new C3());
+    s.bearing=Math.atan2(l.x,l.y);
   }
-
-  function removeSat(name) {
-    const s = sats[name]; if (!s) return;
-    viewer.entities.remove(s.entity);
-    if (s.orbit) viewer.entities.remove(s.orbit);
-    if (s.ground) viewer.entities.remove(s.ground);
-    if (followName === name) stopFollow();
-    if (selectedName === name) { selectedName = null; $('infoPanel').classList.remove('show'); }
-    delete sats[name]; renderList();
+  s.q=Cesium.Transforms.headingPitchRollQuaternion(s.pos,new Cesium.HeadingPitchRoll(s.bearing-Math.PI/2,0,0));
+  const dist=C3.distance(viewer.camera.positionWC,s.pos), near=dist<4e6;
+  s.u=Math.max(dist*.03,1);
+  if(near){
+    const R=Cesium.Matrix3.fromQuaternion(s.q,new Cesium.Matrix3());
+    s.parts.forEach(p=>{C3.multiplyByScalar(tmpV.constructor.fromElements(p.d[0],p.d[1],p.d[2],tmpV),s.u,tmpV);Cesium.Matrix3.multiplyByVector(R,tmpV,tmpV);C3.add(s.pos,tmpV,p.pos)});
   }
-
-  function renderList() {
-    const list = $('satList'); list.innerHTML = '';
-    const keys = Object.keys(sats);
-    $('satCount').textContent = keys.length ? `(${keys.length})` : '';
-    $('liveCount').textContent = keys.length;
-    keys.forEach(n => {
-      const div = document.createElement('div');
-      div.className = 'satRow' + (selectedName === n ? ' selected' : '');
-      div.innerHTML = `<div><div class="n" style="color:${sats[n].color}">${n}</div><div class="m">SGP4 Live</div></div><button data-n="${n}">×</button>`;
-      div.onclick = e => { if (e.target.tagName === 'BUTTON') return; selectSat(n); };
-      list.appendChild(div);
-    });
-    list.querySelectorAll('button').forEach(b => b.onclick = e => { e.stopPropagation(); removeSat(b.dataset.n); });
+  s.parts.forEach(p=>p.e.show=near);
+  if(Math.abs(simMs-s.built)>120000) buildLine(s);
+}
+function buildLine(s){
+  const rec=s.c.rec, per=2*Math.PI/rec.no, n=120, pts=[];
+  for(let i=0;i<=n;i++){
+    const d=new Date(simMs+i*per/n*60000), pv=satellite.propagate(rec,d);
+    if(!pv.position) continue;
+    const e=satellite.eciToEcf(pv.position,satellite.gstime(d));
+    pts.push(new C3(e.x*1e3,e.y*1e3,e.z*1e3));
   }
+  s.line=pts; s.built=simMs;
+}
 
-  function updateAll() {
-    const now = new Date();
-    Object.entries(sats).forEach(([name, s]) => {
-      try {
-        const pv = satellite.propagate(s.satrec, now);
-        if (!pv.position) return;
-        const gmst = satellite.gstime(now);
-        const geo = satellite.eciToGeodetic(pv.position, gmst);
-        const lon = satellite.degreesLong(geo.longitude);
-        const lat = satellite.degreesLat(geo.latitude);
-        const alt = geo.height * 1000;
-        s.entity.position = Cesium.Cartesian3.fromDegrees(lon, lat, alt);
+/* ---------- Auswahl, Info, Follow ---------- */
+function select(s,fly){
+  if(!s) return; selKey=s.key; renderList();
+  $('infoName').textContent=s.c.name; $('infoPanel').classList.add('show'); updateInfo();
+  if(fly&&!followKey) viewer.camera.flyTo({destination:C3.fromDegrees(s.lon,s.lat,s.alt*1e3+300000),duration:1.3});
+}
+function updateInfo(){
+  const s=tracked[selKey]; if(!s) return;
+  const rec=s.c.rec, per=2*Math.PI/rec.no;
+  $('infoBody').innerHTML=[['NORAD-ID',s.c.id],['Breite',s.lat.toFixed(3)+'°'],['Länge',s.lon.toFixed(3)+'°'],['Höhe',s.alt.toFixed(0)+' km'],['Geschwindigkeit',s.v.toFixed(2)+' km/s'],['Umlaufzeit',per.toFixed(1)+' min'],['Inklination',deg(rec.inclo).toFixed(1)+'°']]
+    .map(r=>`<div class="infoRow"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`).join('');
+  $('aFollow').textContent=followKey===selKey?'Nicht folgen':'Folgen';
+}
+function startFollow(key){const s=tracked[key];if(!s)return;followKey=key;viewer.trackedEntity=s.entity;$('btnFollow').classList.add('active');updateInfo();toast('Folge '+s.c.name)}
+function stopFollow(){followKey=null;viewer.trackedEntity=undefined;$('btnFollow').classList.remove('active');updateInfo()}
+$('btnFollow').onclick=()=>{if(followKey)return stopFollow();const k=selKey||Object.keys(tracked)[0];k?startFollow(k):toast('Kein Satellit verfolgt')};
+$('aFollow').onclick=()=>followKey===selKey?stopFollow():startFollow(selKey);
+$('aDel').onclick=()=>untrack(selKey);
+$('closeInfo').onclick=()=>{$('infoPanel').classList.remove('show');selKey=null;renderList()};
 
-        // heading for icon rotation
-        const t2 = new Date(now.getTime() + 8000);
-        const pv2 = satellite.propagate(s.satrec, t2);
-        if (pv2.position) {
-          const geo2 = satellite.eciToGeodetic(pv2.position, satellite.gstime(t2));
-          const lon2 = satellite.degreesLong(geo2.longitude);
-          const lat2 = satellite.degreesLat(geo2.latitude);
-          const dLon = (lon2 - lon) * Math.PI / 180;
-          const φ1 = lat * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
-          const y = Math.sin(dLon) * Math.cos(φ2);
-          const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(dLon);
-          const bearing = Math.atan2(y, x);
-          if (s.entity.billboard) s.entity.billboard.rotation = -bearing;
-        }
-        s.last = { lon, lat, alt };
-        if (selectedName === name) updateInfo(name, s.last);
-      } catch {}
-    });
-  }
-
-  function selectSat(name) {
-    if (!sats[name]) return;
-    selectedName = name; renderList();
-    const p = sats[name].last;
-    $('infoName').textContent = name;
-    if (p) updateInfo(name, p);
-    $('infoPanel').classList.add('show');
-    if (!followName && p) {
-      viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, Math.max(p.alt*3.2, 550000)), duration: 1.3 });
-    }
-  }
-
-  function updateInfo(name, p) {
-    $('infoBody').innerHTML = `
-      <div class="infoRow"><span class="k">Latitude</span><span class="v">${p.lat.toFixed(4)}°</span></div>
-      <div class="infoRow"><span class="k">Longitude</span><span class="v">${p.lon.toFixed(4)}°</span></div>
-      <div class="infoRow"><span class="k">Höhe</span><span class="v">${(p.alt/1000).toFixed(1)} km</span></div>
-      <div class="infoRow"><span class="k">Follow</span><span class="v">${followName===name?'Aktiv':'Aus'}</span></div>`;
-  }
-
-  function startFollow(name) {
-    if (!sats[name]) return;
-    followName = name;
-    viewer.trackedEntity = sats[name].entity;
-    $('btnFollow').classList.add('active');
-    toast('Follow: ' + name);
-    selectSat(name);
-  }
-  function stopFollow() {
-    followName = null;
-    viewer.trackedEntity = undefined;
-    $('btnFollow').classList.remove('active');
-  }
-
-  $('btnFollow').onclick = () => {
-    if (followName) { stopFollow(); return; }
-    const keys = Object.keys(sats);
-    if (!keys.length) { toast('Kein Satellit geladen'); return; }
-    startFollow(selectedName && sats[selectedName] ? selectedName : keys[0]);
-  };
-  $('closeInfo').onclick = () => { $('infoPanel').classList.remove('show'); selectedName=null; renderList(); };
-
-  async function loadGroup(group, filterFn, limit=10) {
-    status('Lade TLE…');
-    try {
-      const res = await fetch(`https://celestrak.org/NORAD/elements/gp.php?GROUP=${encodeURIComponent(group)}&FORMAT=tle`);
-      const text = await res.text();
-      const lines = text.trim().split(/\r?\n/);
-      let added = 0;
-      for (let i=0; i<lines.length-2 && added<limit; i+=3) {
-        const name = lines[i].trim();
-        if (filterFn(name) && addSat(name, lines[i+1], lines[i+2])) added++;
-      }
-      status('Bereit');
-      toast(added ? added + ' Satellit(en) geladen' : 'Keine neuen gefunden');
-    } catch { status('Bereit'); toast('TLE nicht erreichbar'); }
-  }
-
-  document.querySelectorAll('[data-g]').forEach(btn => {
-    btn.onclick = () => {
-      const g = btn.dataset.g;
-      if (g==='iss') loadGroup('stations', n=>/ISS|ZARYA/i.test(n), 2);
-      else if (g==='hst') loadGroup('stations', n=>/HST/i.test(n), 1);
-      else if (g==='css') loadGroup('stations', n=>/CSS|TIANHE/i.test(n), 2);
-      else if (g==='starlink') loadGroup('starlink', n=>/STARLINK/i.test(n), 12);
-      else if (g==='weather') loadGroup('weather', n=>/NOAA|METOP|GOES/i.test(n), 8);
-      else if (g==='visual') loadGroup('visual', n=>true, 10);
-      else if (g==='stations') loadGroup('stations', n=>true, 8);
-    };
+function renderList(){
+  const keys=Object.keys(tracked), list=$('satList'); list.innerHTML='';
+  $('satCount').textContent=keys.length?`(${keys.length})`:'';
+  if(!keys.length) list.innerHTML='<div class="hint">Noch nichts verfolgt. Suche oben nach einem Satelliten oder tippe einen Punkt auf dem Globus an.</div>';
+  keys.forEach(k=>{
+    const s=tracked[k], div=document.createElement('div');
+    div.className='row'+(selKey===k?' selected':'');
+    div.innerHTML=`<div><div class="n" style="color:${s.col}">${s.c.name}</div><div class="m">NORAD ${s.c.id}</div></div><button class="x" aria-label="Entfernen">×</button>`;
+    div.onclick=e=>{if(e.target.tagName==='BUTTON')untrack(k);else select(s,true)};
+    list.appendChild(div);
   });
-  $('clearSats').onclick = () => { Object.keys(sats).forEach(removeSat); toast('Alle entfernt'); };
+}
+$('clearSats').onclick=()=>{Object.keys(tracked).forEach(untrack);toast('Alle entfernt')};
 
-  loadGroup('stations', n=>/ISS|ZARYA/i.test(n), 1);
-  setInterval(updateAll, 1000);
+/* Schnell hinzufügen – aus dem Katalog */
+const Q={iss:[/ISS \(ZARYA\)/,1],hst:[/^HST/,1],css:[/CSS \(TIANHE|CSS \(WENTIAN|CSS \(MENGTIAN/,3],starlink:[/STARLINK/,10],weather:[/NOAA|METOP|GOES/,8],gps:[/NAVSTAR/,8]};
+document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{
+  if(!cat.length) return toast('Katalog lädt noch…');
+  const [re,lim]=Q[b.dataset.q]; let n=0,first=null;
+  for(const c of cat){if(n>=lim)break;if(re.test(c.name)&&!tracked[c.id]){const s=track(c);first=first||s;n++}}
+  n?(toast(n+' hinzugefügt'),select(first,true)):toast('Nichts Neues gefunden');
+});
 
-  // Search
-  let st;
-  $('search').oninput = () => { clearTimeout(st); st = setTimeout(() => doSearch($('search').value.trim()), 280); };
-  $('searchBtn').onclick = () => doSearch($('search').value.trim());
-
-  async function doSearch(q) {
-    if (q.length < 2) { $('suggestions').style.display='none'; return; }
-    const ql = q.toLowerCase();
-    let html = '';
-
-    Object.keys(sats).forEach(n => {
-      if (n.toLowerCase().includes(ql))
-        html += `<div class="sug" data-type="tracked" data-name="${n}"><b>${n}</b><span>Bereits geladen – anzeigen</span></div>`;
-    });
-
-    const popular = [
-      {k:['iss','zarya'], label:'ISS (ZARYA)', g:'stations', f:n=>/ISS|ZARYA/i.test(n)},
-      {k:['hubble','hst'], label:'Hubble (HST)', g:'stations', f:n=>/HST/i.test(n)},
-      {k:['tiangong','css','tianhe'], label:'Tiangong / CSS', g:'stations', f:n=>/CSS|TIANHE/i.test(n)},
-      {k:['starlink'], label:'Starlink (Auswahl)', g:'starlink', f:n=>/STARLINK/i.test(n)},
-      {k:['noaa'], label:'NOAA Wetter', g:'weather', f:n=>/NOAA/i.test(n)}
-    ];
-    popular.forEach(p => {
-      if (p.k.some(k => ql.includes(k)))
-        html += `<div class="sug" data-type="load" data-g="${p.g}" data-label="${p.label}"><b>${p.label}</b><span>Satelliten laden</span></div>`;
-    });
-
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`);
-      const places = await res.json();
-      places.forEach(p => {
-        html += `<div class="sug" data-type="place" data-lon="${p.lon}" data-lat="${p.lat}"><b>${p.display_name.split(',')[0]}</b><span>${p.display_name}</span></div>`;
-      });
-    } catch {}
-
-    if (!html) html = `<div class="sug"><b>Keine Treffer</b></div>`;
-    $('suggestions').innerHTML = html;
-    $('suggestions').style.display = 'block';
-
-    $('suggestions').querySelectorAll('.sug').forEach(el => {
-      el.onclick = () => {
-        const t = el.dataset.type;
-        if (t === 'tracked') selectSat(el.dataset.name);
-        else if (t === 'load') {
-          const g = el.dataset.g, label = el.dataset.label || '';
-          if (g==='stations' && label.includes('ISS')) loadGroup('stations', n=>/ISS|ZARYA/i.test(n), 2);
-          else if (g==='stations' && label.includes('Hubble')) loadGroup('stations', n=>/HST/i.test(n), 1);
-          else if (g==='stations') loadGroup('stations', n=>/CSS|TIANHE/i.test(n), 2);
-          else if (g==='starlink') loadGroup('starlink', n=>/STARLINK/i.test(n), 10);
-          else if (g==='weather') loadGroup('weather', n=>/NOAA/i.test(n), 6);
-        } else if (t === 'place') {
-          stopFollow();
-          viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(+el.dataset.lon, +el.dataset.lat, 220000), duration: 1.6 });
-        }
-        $('suggestions').style.display = 'none';
-      };
-    });
-  }
-  document.addEventListener('click', e => { if (!e.target.closest('.search-box')) $('suggestions').style.display='none'; });
-
-  // Weather + coords
-  async function weather() {
-    try {
-      const c = viewer.camera.positionCartographic;
-      const lat = Cesium.Math.toDegrees(c.latitude), lon = Cesium.Math.toDegrees(c.longitude);
-      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&current=temperature_2m,wind_speed_10m,relative_humidity_2m&wind_speed_unit=kmh`);
-      const d = await r.json();
-      $('temp').textContent = Math.round(d.current.temperature_2m) + '°';
-      $('wSub').textContent = `Wind ${Math.round(d.current.wind_speed_10m)} km/h · ${d.current.relative_humidity_2m}%`;
-    } catch { $('temp').textContent='–'; $('wSub').textContent='Offline'; }
-  }
-  viewer.camera.changed.addEventListener(() => {
-    const c = viewer.camera.positionCartographic;
-    $('lat').textContent = Cesium.Math.toDegrees(c.latitude).toFixed(3);
-    $('lon').textContent = Cesium.Math.toDegrees(c.longitude).toFixed(3);
-    $('alt').textContent = (c.height/1000).toFixed(0) + ' km';
+/* ---------- Überflug-Vorhersage ---------- */
+let obs=null, obsEnt=null;
+function setObs(lat,lon){
+  obs={lat,lon};
+  if(obsEnt) viewer.entities.remove(obsEnt);
+  obsEnt=viewer.entities.add({position:C3.fromDegrees(lon,lat,0),point:{pixelSize:9,color:Cesium.Color.fromCssColorString('#2ce59b'),outlineColor:Cesium.Color.WHITE,outlineWidth:2,disableDepthTestDistance:Infinity}});
+}
+function ensureObs(){
+  return new Promise(res=>{
+    if(obs) return res(true);
+    const cam=()=>{const c=viewer.camera.positionCartographic;setObs(deg(c.latitude),deg(c.longitude));toast('Standort nicht verfügbar – nutze Kartenmitte');res(true)};
+    if(!navigator.geolocation) return cam();
+    navigator.geolocation.getCurrentPosition(p=>{setObs(p.coords.latitude,p.coords.longitude);res(true)},cam,{timeout:6000});
   });
-  setInterval(weather, 50000); weather(); status('Bereit');
-
-  // UI hide
-  function toggleUI() {
-    document.body.classList.toggle('ui-hidden');
-    const h = document.body.classList.contains('ui-hidden');
-    $('btnHideUI').classList.toggle('active', h);
-    toast(h ? 'UI aus – Taste H zum Einblenden' : 'UI wieder sichtbar');
+}
+function sunDir(ms){const v=Cesium.Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(Cesium.JulianDate.fromDate(new Date(ms)));return C3.normalize(v,new C3())}
+function litAndDark(eci,obsEci,sd){
+  const dot=eci.x*sd.x+eci.y*sd.y+eci.z*sd.z;
+  const lit=dot>0||Math.sqrt(Math.max(eci.x**2+eci.y**2+eci.z**2-dot*dot,0))>RE;
+  const ol=Math.hypot(obsEci.x,obsEci.y,obsEci.z);
+  const sunEl=Math.asin((obsEci.x*sd.x+obsEci.y*sd.y+obsEci.z*sd.z)/ol);
+  return lit&&sunEl<rad(-6);
+}
+async function calcPasses(s){
+  $('passHint').textContent='Berechne…'; $('passList').innerHTML='';
+  await ensureObs();
+  const o={latitude:rad(obs.lat),longitude:rad(obs.lon),height:.05}, out=[]; let cur=null;
+  const t0=simMs, step=20000, N=86400000/step;
+  for(let i=0;i<=N;i++){
+    const t=t0+i*step, d=new Date(t), pv=satellite.propagate(s.c.rec,d);
+    if(!pv.position) continue;
+    const g=satellite.gstime(d), ecf=satellite.eciToEcf(pv.position,g), el=deg(satellite.ecfToLookAngles(o,ecf).elevation);
+    if(el>10){
+      if(!cur) cur={t0:t,max:el,tm:t,vis:false};
+      if(el>cur.max){cur.max=el;cur.tm=t}
+      if(!cur.vis&&litAndDark(pv.position,satellite.ecfToEci(satellite.geodeticToEcf(o),g),sunDir(t))) cur.vis=true;
+    }else if(cur){cur.t1=t;out.push(cur);cur=null}
   }
-  $('btnHideUI').onclick = toggleUI;
-  document.addEventListener('keydown', e => {
-    if ((e.key==='h'||e.key==='H') && e.target.tagName!=='INPUT') toggleUI();
-    if (e.key==='Escape') { stopFollow(); $('infoPanel').classList.remove('show'); selectedName=null; renderList(); }
+  if(cur){cur.t1=t0+86400000;out.push(cur)}
+  $('passHint').textContent=`${s.c.name} über deinem Standort, nächste 24 h: ${out.length} Überflüge. Tippe einen an, um die Zeit dorthin zu springen.`;
+  $('passList').innerHTML=out.length?'':'<div class="hint">Keine Überflüge über 10° gefunden.</div>';
+  out.forEach(p=>{
+    const row=document.createElement('div'); row.className='row';
+    const day=new Date(p.t0).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'});
+    row.innerHTML=`<div><div class="n">${day}, ${new Date(p.t0).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</div><div class="m">${Math.max(1,Math.round((p.t1-p.t0)/60000))} min · max. ${p.max.toFixed(0)}°</div></div>${p.vis?'<span class="badge">sichtbar</span>':''}`;
+    row.onclick=()=>{live=false;paused=false;speed=1;simMs=p.t0-30000;select(s,false);toast('Zeit gesprungen')};
+    $('passList').appendChild(row);
   });
+}
+function openPasses(){const s=tracked[selKey]||tracked[Object.keys(tracked)[0]];if(!s)return toast('Erst einen Satelliten wählen');showTab('pass');$('sidePanel').classList.remove('hide');calcPasses(s)}
+$('aPass').onclick=openPasses;
 
-  // Controls
-  $('btnHome').onclick = () => { stopFollow(); viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(15,25,16000000), duration:1.5 }); };
-  $('btnIn').onclick = () => viewer.camera.zoomIn(viewer.camera.positionCartographic.height * 0.25);
-  $('btnOut').onclick = () => viewer.camera.zoomOut(viewer.camera.positionCartographic.height * 0.35);
-  $('btnFs').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
-  $('btnLocate').onclick = () => {
-    navigator.geolocation.getCurrentPosition(p => {
-      stopFollow();
-      viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(p.coords.longitude, p.coords.latitude, 180000), duration:1.6 });
-      toast('Standort gefunden');
-    }, () => toast('Standort blockiert'));
-  };
-  $('closePanel').onclick = () => { $('sidePanel').classList.add('hide'); $('openPanel').style.display='grid'; };
-  $('openPanel').onclick = () => { $('sidePanel').classList.remove('hide'); $('openPanel').style.display='none'; };
-  if (innerWidth < 700) { $('sidePanel').classList.add('hide'); $('openPanel').style.display='grid'; }
+/* ---------- Render-Loop ---------- */
+let infoT=0;
+scene.preRender.addEventListener(()=>{
+  const n=performance.now(), dt=n-lastT; lastT=n;
+  if(live) simMs=Date.now(); else if(!paused) simMs+=dt*speed;
+  viewer.clock.currentTime=Cesium.JulianDate.fromDate(new Date(simMs));
+  Object.values(tracked).forEach(updateTracked);ring.show=!!tracked[selKey];
+  if(cloud&&cat.length){const sl=Math.abs(speed)>20&&!live?3000:500;updateCloud(cursor,cursor+sl);cursor=(cursor+sl)%cat.length}
+  if(n-infoT>250){infoT=n;timeUI();updateInfo()}
+});
+
+/* ---------- Picking ---------- */
+new Cesium.ScreenSpaceEventHandler(scene.canvas).setInputAction(m=>{
+  const p=scene.pick(m.position,8,8); if(!p) return;
+  if(p.primitive instanceof Cesium.PointPrimitive&&typeof p.id==='number') select(track(cat[p.id]),false);
+  else if(p.id&&p.id.satKey) select(tracked[p.id.satKey],false);
+},Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+/* ---------- Suche ---------- */
+let st;
+$('search').oninput=()=>{clearTimeout(st);st=setTimeout(()=>doSearch($('search').value.trim()),280)};
+$('searchBtn').onclick=()=>doSearch($('search').value.trim());
+async function doSearch(q){
+  const box=$('suggestions'); if(q.length<2){box.style.display='none';return}
+  const ql=q.toLowerCase(); let html='';
+  cat.filter(c=>c.name.toLowerCase().includes(ql)||c.id===q).slice(0,6).forEach(c=>{
+    html+=`<div class="sug" data-sat="${c.id}"><b>${c.name}</b><span>Satellit · NORAD ${c.id}</span></div>`;
+  });
+  try{
+    const places=await (await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=4`)).json();
+    places.forEach(p=>{html+=`<div class="sug" data-lon="${p.lon}" data-lat="${p.lat}"><b>${p.display_name.split(',')[0]}</b><span>${p.display_name}</span></div>`});
+  }catch{}
+  box.innerHTML=html||'<div class="sug"><b>Keine Treffer</b></div>'; box.style.display='block';
+  box.querySelectorAll('.sug').forEach(el=>el.onclick=()=>{
+    if(el.dataset.sat){select(track(cat.find(c=>c.id===el.dataset.sat)),true)}
+    else if(el.dataset.lon){stopFollow();viewer.camera.flyTo({destination:C3.fromDegrees(+el.dataset.lon,+el.dataset.lat,220000),duration:1.6})}
+    box.style.display='none';
+  });
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.search-box'))$('suggestions').style.display='none'});
+
+/* ---------- Panel, Layer, Wetter ---------- */
+function showTab(t){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));document.querySelectorAll('.tabc').forEach(c=>c.classList.toggle('on',c.id==='tab-'+t))}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+document.querySelectorAll('[data-base]').forEach(el=>el.onclick=()=>{
+  document.querySelectorAll('[data-base]').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');el.querySelector('input').checked=true;
+  const u={sat:null,osm:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',dark:'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'}[el.dataset.base];
+  viewer.imageryLayers.remove(baseL);
+  baseL=viewer.imageryLayers.addImageryProvider(u?new Cesium.UrlTemplateImageryProvider({url:u,maximumLevel:19}):esri,0);
+});
+$('chkCloud').onchange=e=>{if(cloud)cloud.show=e.target.checked};
+$('chkOrbits').onchange=e=>{flags.orbits=e.target.checked;Object.values(tracked).forEach(s=>s.orbit.show=flags.orbits)};
+$('chkFoot').onchange=e=>{flags.foot=e.target.checked;Object.values(tracked).forEach(s=>s.foot.show=flags.foot)};
+$('chkLabels').onchange=e=>{flags.labels=e.target.checked;Object.values(tracked).forEach(s=>s.entity.label.show=flags.labels)};
+let rainL=null;
+$('chkRain').onchange=async e=>{
+  if(e.target.checked){
+    try{const d=await (await fetch('https://api.rainviewer.com/public/weather-maps.json')).json();
+      rainL=viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({url:`https://tilecache.rainviewer.com${d.radar.past.at(-1).path}/256/{z}/{x}/{y}/2/1_1.png`,maximumLevel:12}));
+      rainL.alpha=.5;toast('Radar aktiv');
+    }catch{e.target.checked=false;toast('Radar offline')}
+  }else if(rainL){viewer.imageryLayers.remove(rainL);rainL=null}
+};
+async function weather(){
+  try{
+    const c=viewer.camera.positionCartographic;
+    const d=await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${deg(c.latitude).toFixed(2)}&longitude=${deg(c.longitude).toFixed(2)}&current=temperature_2m,wind_speed_10m,relative_humidity_2m&wind_speed_unit=kmh`)).json();
+    $('temp').textContent=Math.round(d.current.temperature_2m)+'°';
+    $('wSub').textContent=`Wind ${Math.round(d.current.wind_speed_10m)} km/h · ${d.current.relative_humidity_2m}%`;
+  }catch{$('temp').textContent='–';$('wSub').textContent='Offline'}
+}
+viewer.camera.changed.addEventListener(()=>{
+  const c=viewer.camera.positionCartographic;
+  $('lat').textContent=deg(c.latitude).toFixed(3);$('lon').textContent=deg(c.longitude).toFixed(3);$('alt').textContent=(c.height/1000).toFixed(0)+' km';
+});
+setInterval(weather,50000);weather();
+
+/* ---------- Steuerung ---------- */
+function toggleUI(){document.body.classList.toggle('ui-hidden');const h=document.body.classList.contains('ui-hidden');$('btnHideUI').classList.toggle('active',h);toast(h?'UI aus – Taste H zum Einblenden':'UI sichtbar')}
+$('btnHideUI').onclick=toggleUI;
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.key==='h'||e.key==='H')toggleUI();
+  if(e.key===' '){e.preventDefault();$('tPlay').click()}
+  if(e.key==='Escape'){stopFollow();$('infoPanel').classList.remove('show');selKey=null;renderList()}
+});
+$('btnHome').onclick=()=>{stopFollow();viewer.camera.flyTo({destination:C3.fromDegrees(15,25,16000000),duration:1.5})};
+$('btnIn').onclick=()=>viewer.camera.zoomIn(viewer.camera.positionCartographic.height*.25);
+$('btnOut').onclick=()=>viewer.camera.zoomOut(viewer.camera.positionCartographic.height*.35);
+$('btnFs').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
+$('btnLocate').onclick=()=>navigator.geolocation.getCurrentPosition(p=>{
+  stopFollow();setObs(p.coords.latitude,p.coords.longitude);
+  viewer.camera.flyTo({destination:C3.fromDegrees(p.coords.longitude,p.coords.latitude,1800000),duration:1.6});toast('Standort gesetzt');
+},()=>toast('Standortzugriff blockiert'));
+$('closePanel').onclick=()=>{$('sidePanel').classList.add('hide');$('openPanel').style.display='grid'};
+$('openPanel').onclick=()=>{$('sidePanel').classList.remove('hide');$('openPanel').style.display='none'};
+if(innerWidth<700){$('sidePanel').classList.add('hide');$('openPanel').style.display='grid'}
+
+renderList(); timeUI(); loadCatalog();
 })();
 </script>
 </body>

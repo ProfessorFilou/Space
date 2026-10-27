@@ -3,34 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ORBIT LIVE — Professional 3D Globe</title>
+<title>ORBIT LIVE — Professional Satellite Tracker</title>
 
-<!-- CesiumJS -->
-<script src="https://cesium.com/downloads/cesiumjs/releases/1.123/Build/Cesium/Cesium.js"></script>
-<link href="https://cesium.com/downloads/cesiumjs/releases/1.123/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+<script src="https://cesium.com/downloads/cesiumjs/releases/1.124/Build/Cesium/Cesium.js"></script>
+<link href="https://cesium.com/downloads/cesiumjs/releases/1.124/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
 
 <style>
   :root {
-    --bg: #03060c;
-    --glass: rgba(8, 14, 28, 0.78);
-    --glass-strong: rgba(10, 18, 36, 0.92);
-    --border: rgba(0, 210, 255, 0.18);
-    --cyan: #00d4ff;
-    --cyan-soft: rgba(0, 212, 255, 0.15);
-    --text: #eef5ff;
-    --text-dim: #7a8ba3;
-    --danger: #ff4d6d;
-    --success: #2ee59d;
-    --radius: 16px;
-    --shadow: 0 12px 40px rgba(0,0,0,0.55);
+    --bg: #02050c;
+    --panel: rgba(7, 13, 26, 0.82);
+    --panel-solid: rgba(9, 16, 32, 0.95);
+    --border: rgba(0, 200, 255, 0.16);
+    --cyan: #00c8ff;
+    --cyan-dim: rgba(0, 200, 255, 0.12);
+    --text: #f0f6ff;
+    --muted: #7d8da6;
+    --red: #ff4b6e;
+    --green: #2ce59b;
+    --radius: 14px;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
   #cesiumContainer { position: absolute; inset: 0; }
 
-  /* Hide default Cesium UI */
+  /* Hide Cesium defaults */
   .cesium-viewer-bottom,
   .cesium-viewer-toolbar,
   .cesium-viewer-animationContainer,
@@ -39,644 +38,581 @@
   .cesium-credit-logoContainer,
   .cesium-credit-textContainer { display: none !important; }
 
-  /* ========== GLASS PANELS ========== */
-  .panel {
-    background: var(--glass);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  .glass {
+    background: var(--panel);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
   }
 
-  /* Top Left */
-  #top-left {
-    position: absolute; top: 18px; left: 18px; z-index: 100;
-    width: min(380px, calc(100vw - 36px));
-    display: flex; flex-direction: column; gap: 12px;
+  /* TOP LEFT */
+  #topLeft {
+    position: absolute; top: 16px; left: 16px; z-index: 20;
+    width: min(360px, calc(100vw - 32px));
+    display: flex; flex-direction: column; gap: 10px;
   }
 
-  .logo {
-    display: flex; align-items: center; gap: 14px;
-    padding: 12px 16px;
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 15px;
   }
-  .logo-icon {
-    width: 38px; height: 38px; border-radius: 12px;
-    background: linear-gradient(135deg, #00d4ff 0%, #0077ff 100%);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 15px; color: #001018;
-    box-shadow: 0 0 20px rgba(0,212,255,0.35);
+  .brand-mark {
+    width: 36px; height: 36px; border-radius: 11px;
+    background: linear-gradient(135deg, #00c8ff, #0066ff);
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; color: #001019;
+    box-shadow: 0 0 24px rgba(0,200,255,0.35);
   }
-  .logo-text { font-size: 17px; font-weight: 600; letter-spacing: 0.3px; }
-  .logo-text span { display: block; font-size: 11px; font-weight: 400; color: var(--cyan); letter-spacing: 1px; margin-top: 1px; }
+  .brand h1 { font-size: 16px; font-weight: 650; letter-spacing: 0.2px; }
+  .brand p { font-size: 11px; color: var(--cyan); letter-spacing: 0.8px; margin-top: 1px; }
 
-  .search-wrap { position: relative; }
-  .search-input {
-    width: 100%; height: 48px; padding: 0 48px 0 18px;
-    background: rgba(0,0,0,0.35); border: 1px solid var(--border);
-    border-radius: 14px; color: var(--text); font-size: 14px; outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+  .searchBox { position: relative; }
+  .searchBox input {
+    width: 100%; height: 46px; padding: 0 44px 0 16px;
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text); font-size: 14px; outline: none;
   }
-  .search-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
-  .search-input::placeholder { color: var(--text-dim); }
-  .search-btn {
-    position: absolute; right: 8px; top: 8px; width: 32px; height: 32px;
-    border: none; background: transparent; color: var(--cyan); border-radius: 8px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  .searchBox input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-dim); }
+  .searchBox button {
+    position: absolute; right: 7px; top: 7px; width: 32px; height: 32px;
+    border: none; background: transparent; color: var(--cyan); border-radius: 8px; cursor: pointer;
   }
-  .search-btn:hover { background: var(--cyan-soft); }
 
   #suggestions {
-    position: absolute; top: calc(100% + 8px); left: 0; right: 0;
-    max-height: 300px; overflow-y: auto; display: none; z-index: 200;
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    max-height: 280px; overflow-y: auto; display: none; z-index: 30;
   }
-  .suggestion {
-    padding: 12px 16px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04);
-    transition: background 0.15s;
+  .sug {
+    padding: 11px 14px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04);
   }
-  .suggestion:hover { background: rgba(0,212,255,0.1); }
-  .suggestion .title { font-weight: 500; font-size: 14px; }
-  .suggestion .sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .sug:hover { background: rgba(0,200,255,0.1); }
+  .sug b { font-weight: 560; font-size: 13.5px; }
+  .sug span { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
 
-  /* Left Panel */
-  #side-panel {
-    position: absolute; top: 140px; left: 18px; z-index: 100;
-    width: 300px; max-height: calc(100vh - 220px); overflow-y: auto;
-    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+  /* LEFT PANEL */
+  #panel {
+    position: absolute; top: 130px; left: 16px; z-index: 20;
+    width: 300px; max-height: calc(100vh - 200px); overflow-y: auto;
+    transition: 0.3s cubic-bezier(0.4,0,0.2,1);
   }
-  #side-panel.hidden { transform: translateX(-120%); opacity: 0; pointer-events: none; }
+  #panel.hide { transform: translateX(-110%); opacity: 0; pointer-events: none; }
 
-  .panel-head {
+  .panelHead {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06);
-    font-weight: 600; font-size: 13px; letter-spacing: 0.3px;
+    padding: 13px 15px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 13px; font-weight: 600;
   }
-  .panel-body { padding: 12px; }
+  .panelBody { padding: 12px; }
 
-  .section { margin-bottom: 18px; }
-  .section-title {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
-    color: var(--text-dim); margin-bottom: 8px; padding-left: 4px;
+  .sec { margin-bottom: 16px; }
+  .secTitle {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.9px;
+    color: var(--muted); margin-bottom: 7px; padding-left: 2px;
   }
 
-  .row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 12px; border-radius: 12px; cursor: pointer;
-    transition: background 0.15s; margin-bottom: 2px;
+  .item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 11px; border-radius: 10px; cursor: pointer;
+    transition: 0.15s; margin-bottom: 2px; font-size: 13.5px;
   }
-  .row:hover { background: rgba(0,212,255,0.07); }
-  .row.active { background: rgba(0,212,255,0.12); }
-  .row input { accent-color: var(--cyan); width: 16px; height: 16px; }
-  .row label { flex: 1; font-size: 13.5px; cursor: pointer; }
+  .item:hover { background: rgba(0,200,255,0.07); }
+  .item.active { background: rgba(0,200,255,0.12); }
+  .item input { accent-color: var(--cyan); }
 
-  /* Tracked sats */
-  .sat-card {
+  .quickAdd {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+  }
+  .quickAdd button {
+    padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: rgba(0,0,0,0.3); color: var(--text); font-size: 12px; cursor: pointer;
+  }
+  .quickAdd button:hover { border-color: var(--cyan); background: var(--cyan-dim); }
+
+  .satRow {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 12px; background: rgba(0,0,0,0.25); border-radius: 12px;
-    margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.04);
+    padding: 9px 11px; background: rgba(0,0,0,0.28); border-radius: 10px;
+    margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.03);
   }
-  .sat-info .name { font-weight: 500; font-size: 13px; }
-  .sat-info .meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-  .sat-remove {
-    width: 28px; height: 28px; border: none; background: transparent;
-    color: var(--danger); border-radius: 8px; cursor: pointer; font-size: 16px;
+  .satRow .n { font-size: 13px; font-weight: 530; }
+  .satRow .m { font-size: 11px; color: var(--muted); }
+  .satRow button {
+    width: 26px; height: 26px; border: none; background: transparent;
+    color: var(--red); border-radius: 6px; cursor: pointer; font-size: 15px;
   }
-  .sat-remove:hover { background: rgba(255,77,109,0.15); }
 
-  /* Top Right */
-  #top-right {
-    position: absolute; top: 18px; right: 18px; z-index: 100;
-    display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+  /* TOP RIGHT */
+  #topRight {
+    position: absolute; top: 16px; right: 16px; z-index: 20;
+    display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
   }
-  .stat-card {
-    padding: 12px 16px; min-width: 170px; text-align: right;
+  .card {
+    padding: 11px 15px; min-width: 160px; text-align: right;
   }
-  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-dim); margin-bottom: 4px; }
-  .stat-value { font-size: 18px; font-weight: 600; color: var(--cyan); }
-  .stat-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .card .l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); }
+  .card .v { font-size: 17px; font-weight: 650; color: var(--cyan); margin-top: 2px; }
+  .card .s { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-  /* Bottom Left */
-  #bottom-left {
-    position: absolute; bottom: 18px; left: 18px; z-index: 100;
-    display: flex; flex-direction: column; gap: 8px;
+  /* BOTTOM */
+  #bottomLeft {
+    position: absolute; bottom: 16px; left: 16px; z-index: 20;
+    display: flex; flex-direction: column; gap: 7px;
   }
   .coords {
-    display: flex; gap: 18px; padding: 10px 16px;
-    font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 12px;
+    display: flex; gap: 16px; padding: 9px 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
   }
-  .coords span { color: var(--text-dim); margin-right: 6px; }
-  .attr {
-    padding: 8px 14px; font-size: 11px; color: var(--text-dim); max-width: 420px; line-height: 1.4;
-  }
+  .coords span { color: var(--muted); margin-right: 5px; }
+  .attr { padding: 7px 12px; font-size: 11px; color: var(--muted); max-width: 400px; }
 
-  /* Bottom Right Controls */
   #controls {
-    position: absolute; bottom: 18px; right: 18px; z-index: 100;
-    display: flex; flex-direction: column; gap: 8px;
+    position: absolute; bottom: 16px; right: 16px; z-index: 20;
+    display: flex; flex-direction: column; gap: 7px;
   }
-  .ctrl {
-    width: 46px; height: 46px; border-radius: 14px;
-    border: 1px solid var(--border); background: var(--glass);
-    color: var(--text); font-size: 18px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; backdrop-filter: blur(16px);
+  .btn {
+    width: 44px; height: 44px; border-radius: 12px;
+    border: 1px solid var(--border); background: var(--panel);
+    color: var(--text); font-size: 17px; cursor: pointer;
+    display: grid; place-items: center; transition: 0.15s;
   }
-  .ctrl:hover { background: rgba(0,212,255,0.15); border-color: var(--cyan); color: var(--cyan); transform: translateY(-1px); }
-  .ctrl:active { transform: scale(0.95); }
+  .btn:hover { border-color: var(--cyan); background: var(--cyan-dim); color: var(--cyan); }
 
-  #toggle-panel {
-    position: absolute; top: 140px; left: 18px; z-index: 101;
+  #openPanel {
+    position: absolute; top: 130px; left: 16px; z-index: 21;
     display: none;
   }
 
-  /* Toast */
   #toast {
-    position: absolute; top: 90px; left: 50%; transform: translateX(-50%) translateY(-16px);
-    z-index: 999; padding: 12px 22px; border-radius: 14px;
-    background: var(--glass-strong); border: 1px solid var(--border);
-    font-size: 13px; opacity: 0; pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.4,0,0.2,1); max-width: 90vw; text-align: center;
+    position: absolute; top: 86px; left: 50%; transform: translateX(-50%) translateY(-12px);
+    z-index: 100; padding: 11px 20px; border-radius: 12px;
+    background: var(--panel-solid); border: 1px solid var(--border);
+    font-size: 13px; opacity: 0; pointer-events: none; transition: 0.25s;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  #toast.error { border-color: var(--danger); }
-  #toast.success { border-color: var(--success); }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 5px; }
-  ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.25); border-radius: 10px; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.25); border-radius: 4px; }
 
-  @media (max-width: 720px) {
-    #side-panel { top: auto; bottom: 100px; left: 12px; right: 12px; width: auto; max-height: 50vh; }
-    #side-panel.hidden { transform: translateY(130%); }
-    #toggle-panel { display: flex; top: auto; bottom: 100px; left: 12px; }
-    #top-left { width: calc(100vw - 36px); }
+  @media (max-width: 700px) {
+    #panel { top: auto; bottom: 90px; left: 12px; right: 12px; width: auto; max-height: 48vh; }
+    #panel.hide { transform: translateY(120%); }
+    #openPanel { display: grid; top: auto; bottom: 90px; left: 12px; }
   }
 </style>
 </head>
 <body>
-
 <div id="cesiumContainer"></div>
 
-<!-- TOP LEFT -->
-<div id="top-left">
-  <div class="panel logo">
-    <div class="logo-icon">OL</div>
-    <div class="logo-text">ORBIT LIVE<span>REAL-TIME GLOBE</span></div>
+<div id="topLeft">
+  <div class="glass brand">
+    <div class="brand-mark">OL</div>
+    <div>
+      <h1>ORBIT LIVE</h1>
+      <p>REAL-TIME SATELLITE TRACKER</p>
+    </div>
   </div>
-  <div class="search-wrap">
-    <input class="search-input" id="search" placeholder="Ort oder Satellit (ISS, Hubble, Starlink…)" autocomplete="off">
-    <button class="search-btn" id="searchBtn">
-      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-    </button>
-    <div id="suggestions" class="panel"></div>
+  <div class="searchBox">
+    <input id="search" placeholder="Stadt oder Satellit (ISS, Hubble, Starlink…)" autocomplete="off">
+    <button id="searchBtn">⌕</button>
+    <div id="suggestions" class="glass"></div>
   </div>
 </div>
 
-<!-- SIDE PANEL -->
-<div id="side-panel" class="panel">
-  <div class="panel-head">
+<div id="panel" class="glass">
+  <div class="panelHead">
     <span>Control Center</span>
-    <button style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;line-height:1" id="closePanel">×</button>
+    <button style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer" id="closePanel">×</button>
   </div>
-  <div class="panel-body">
-    <div class="section">
-      <div class="section-title">Basiskarte</div>
-      <div class="row active" data-base="sat"><input type="radio" name="base" checked> <label>Satellitenbild</label></div>
-      <div class="row" data-base="osm"><input type="radio" name="base"> <label>Straßenkarte</label></div>
-      <div class="row" data-base="dark"><input type="radio" name="base"> <label>Dark Matter</label></div>
+  <div class="panelBody">
+    <div class="sec">
+      <div class="secTitle">Basiskarte</div>
+      <div class="item active" data-layer="sat"><input type="radio" name="layer" checked> Satellitenbild</div>
+      <div class="item" data-layer="osm"><input type="radio" name="layer"> Straßenkarte</div>
+      <div class="item" data-layer="dark"><input type="radio" name="layer"> Dark</div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Overlays</div>
-      <div class="row"><input type="checkbox" id="chkRain"> <label for="chkRain">Niederschlag (Radar)</label></div>
-      <div class="row"><input type="checkbox" id="chkWind"> <label for="chkWind">Wind</label></div>
+    <div class="sec">
+      <div class="secTitle">Overlays</div>
+      <div class="item"><input type="checkbox" id="rain"> Niederschlag</div>
+      <div class="item"><input type="checkbox" id="wind"> Wind</div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Satelliten Tracking</div>
-      <div class="row"><input type="checkbox" id="chkISS" checked> <label for="chkISS">ISS (Live)</label></div>
-      <div class="row"><input type="checkbox" id="chkTracking" checked> <label for="chkTracking">Tracking aktiv</label></div>
+    <div class="sec">
+      <div class="secTitle">Schnell hinzufügen</div>
+      <div class="quickAdd">
+        <button data-sat="ISS">ISS</button>
+        <button data-sat="HST">Hubble</button>
+        <button data-sat="CSS">Tiangong</button>
+        <button data-sat="STARLINK">Starlink</button>
+        <button data-sat="NOAA">NOAA</button>
+      </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Aktive Satelliten</div>
+    <div class="sec">
+      <div class="secTitle">Aktive Satelliten <span id="satCount" style="color:var(--cyan)"></span></div>
       <div id="satList"></div>
     </div>
   </div>
 </div>
 
-<button class="ctrl" id="toggle-panel" title="Panel">☰</button>
+<button class="btn" id="openPanel">☰</button>
 
-<!-- TOP RIGHT -->
-<div id="top-right">
-  <div class="panel stat-card">
-    <div class="stat-label">Temperatur</div>
-    <div class="stat-value" id="temp">–</div>
-    <div class="stat-sub" id="weatherSub">Lade Wetter…</div>
+<div id="topRight">
+  <div class="glass card">
+    <div class="l">Temperatur</div>
+    <div class="v" id="temp">–</div>
+    <div class="s" id="wSub">Wetter wird geladen</div>
   </div>
-  <div class="panel stat-card" style="min-width:140px">
-    <div class="stat-label">Status</div>
-    <div class="stat-value" id="status" style="font-size:14px;color:var(--text)">Starte…</div>
+  <div class="glass card" style="min-width:130px">
+    <div class="l">Status</div>
+    <div class="v" id="status" style="font-size:13px;color:var(--text)">Starte Engine…</div>
   </div>
 </div>
 
-<!-- BOTTOM LEFT -->
-<div id="bottom-left">
-  <div class="panel coords">
-    <div><span>LAT</span><strong id="lat">–</strong></div>
-    <div><span>LON</span><strong id="lon">–</strong></div>
-    <div><span>HÖHE</span><strong id="alt">–</strong></div>
+<div id="bottomLeft">
+  <div class="glass coords">
+    <div><span>LAT</span><b id="lat">–</b></div>
+    <div><span>LON</span><b id="lon">–</b></div>
+    <div><span>ALT</span><b id="alt">–</b></div>
   </div>
-  <div class="panel attr">
-    Imagery © Esri · Orbit data CelesTrak + satellite.js · Weather Open-Meteo · Radar RainViewer
-  </div>
+  <div class="glass attr">Esri Imagery · CelesTrak TLE · satellite.js · Open-Meteo · RainViewer</div>
 </div>
 
-<!-- CONTROLS -->
 <div id="controls">
-  <button class="ctrl" id="btnHome" title="Weltansicht">🌐</button>
-  <button class="ctrl" id="btnLocate" title="Mein Standort">⌖</button>
-  <button class="ctrl" id="btnFullscreen" title="Vollbild">⛶</button>
-  <button class="ctrl" id="btnZoomIn">+</button>
-  <button class="ctrl" id="btnZoomOut">−</button>
+  <button class="btn" id="home" title="Welt">🌐</button>
+  <button class="btn" id="locate" title="Standort">⌖</button>
+  <button class="btn" id="fs" title="Vollbild">⛶</button>
+  <button class="btn" id="zin">+</button>
+  <button class="btn" id="zout">−</button>
 </div>
 
 <div id="toast"></div>
 
 <script>
-// ========== CESIUM SETUP ==========
-Cesium.Ion.defaultAccessToken = undefined; // we use free imagery only
+/* ========== CESIUM ========== */
+Cesium.Ion.defaultAccessToken = undefined;
 
 const viewer = new Cesium.Viewer('cesiumContainer', {
-  animation: false,
-  timeline: false,
-  baseLayerPicker: false,
-  geocoder: false,
-  homeButton: false,
-  sceneModePicker: false,
-  navigationHelpButton: false,
-  fullscreenButton: false,
-  infoBox: false,
-  selectionIndicator: false,
+  animation: false, timeline: false, baseLayerPicker: false, geocoder: false,
+  homeButton: false, sceneModePicker: false, navigationHelpButton: false,
+  fullscreenButton: false, infoBox: false, selectionIndicator: false,
   terrainProvider: new Cesium.EllipsoidTerrainProvider(),
   baseLayer: false,
-  requestRenderMode: true,
-  maximumRenderTimeChange: Infinity
+  requestRenderMode: false
 });
 
-// Beautiful globe settings
 const scene = viewer.scene;
 scene.globe.enableLighting = true;
-scene.globe.atmosphereLightIntensity = 20.0;
-scene.skyAtmosphere.show = true;
-scene.skyBox.show = true;
-scene.sun.show = true;
-scene.moon.show = true;
+scene.globe.atmosphereLightIntensity = 25;
+scene.skyAtmosphere.hueShift = -0.02;
+scene.skyAtmosphere.saturationShift = 0.1;
+scene.skyAtmosphere.brightnessShift = 0.05;
 scene.fog.enabled = true;
 scene.globe.showGroundAtmosphere = true;
-scene.screenSpaceCameraController.minimumZoomDistance = 120000;
-scene.screenSpaceCameraController.maximumZoomDistance = 45000000;
+scene.screenSpaceCameraController.minimumZoomDistance = 80000;
+scene.screenSpaceCameraController.maximumZoomDistance = 5e7;
 
-// High quality satellite imagery
-const esriImagery = new Cesium.UrlTemplateImageryProvider({
+const esri = new Cesium.UrlTemplateImageryProvider({
   url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  maximumLevel: 19,
-  credit: 'Esri'
+  maximumLevel: 19
 });
-viewer.imageryLayers.addImageryProvider(esriImagery);
+viewer.imageryLayers.addImageryProvider(esri);
 
-// Initial camera
 viewer.camera.setView({
-  destination: Cesium.Cartesian3.fromDegrees(10, 25, 18000000),
-  orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO + 0.3, roll: 0 }
+  destination: Cesium.Cartesian3.fromDegrees(15, 28, 16500000)
 });
 
-// ========== STATE ==========
-let tracked = {}; // name -> entity
-let trackingOn = true;
-let rainLayer = null;
-let windLayer = null;
+/* ========== STATE ========== */
+const sats = {}; // name -> {satrec, entity, path, color}
+const colors = ['#00c8ff','#ff4b6e','#2ce59b','#ffc857','#b794f4','#f687b3','#4fd1c5','#f6ad55'];
+let colorIdx = 0;
+let rainL = null, windL = null;
 
 const $ = id => document.getElementById(id);
-const toast = (msg, type='') => {
-  const t = $('toast');
-  t.textContent = msg;
-  t.className = 'show ' + type;
-  setTimeout(() => t.className = '', 3000);
+const toast = (m, t='') => {
+  const el = $('toast');
+  el.textContent = m;
+  el.className = 'show';
+  setTimeout(() => el.className = '', 2800);
 };
-const setStatus = txt => $('status').textContent = txt;
+const status = t => $('status').textContent = t;
 
-// ========== BASE LAYERS ==========
-document.querySelectorAll('[data-base]').forEach(row => {
-  row.addEventListener('click', () => {
-    document.querySelectorAll('[data-base]').forEach(r => r.classList.remove('active'));
-    row.classList.add('active');
-    row.querySelector('input').checked = true;
+/* ========== LAYERS ========== */
+document.querySelectorAll('[data-layer]').forEach(el => {
+  el.onclick = () => {
+    document.querySelectorAll('[data-layer]').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    el.querySelector('input').checked = true;
     viewer.imageryLayers.removeAll();
-    if (row.dataset.base === 'sat') {
-      viewer.imageryLayers.addImageryProvider(esriImagery);
-    } else if (row.dataset.base === 'osm') {
-      viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
-        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', maximumLevel: 19
-      }));
-    } else {
-      viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
-        url: 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', maximumLevel: 19
-      }));
-    }
-  });
+    if (el.dataset.layer === 'sat') viewer.imageryLayers.addImageryProvider(esri);
+    else if (el.dataset.layer === 'osm') viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png', maximumLevel:19}));
+    else viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({url:'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', maximumLevel:19}));
+  };
 });
 
-// ========== RAIN ==========
-$('chkRain').addEventListener('change', async e => {
+$('rain').onchange = async e => {
   if (e.target.checked) {
     try {
-      setStatus('Radar lädt…');
-      const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
-      const data = await res.json();
-      const past = data.radar?.past || [];
-      if (!past.length) throw 0;
-      const path = past[past.length-1].path;
-      rainLayer = viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
-        url: `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/2/1_1.png`,
-        maximumLevel: 12
+      const r = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+      const d = await r.json();
+      const path = d.radar.past.at(-1).path;
+      rainL = viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
+        url: `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/2/1_1.png`, maximumLevel:12
       }));
-      rainLayer.alpha = 0.55;
-      setStatus('Radar aktiv');
-      toast('Niederschlagsradar geladen', 'success');
-    } catch {
-      e.target.checked = false;
-      toast('Radar nicht verfügbar', 'error');
-      setStatus('Bereit');
-    }
-  } else if (rainLayer) {
-    viewer.imageryLayers.remove(rainLayer);
-    rainLayer = null;
-  }
-});
+      rainL.alpha = 0.5;
+      toast('Radar aktiv');
+    } catch { e.target.checked = false; toast('Radar offline'); }
+  } else if (rainL) { viewer.imageryLayers.remove(rainL); rainL = null; }
+};
 
-// ========== WIND ==========
-$('chkWind').addEventListener('change', e => {
+$('wind').onchange = e => {
   if (e.target.checked) {
     const d = new Date();
-    const dh = `${d.getUTCFullYear()}${String(d.getUTCMonth()+1).padStart(2,'0')}${String(d.getUTCDate()).padStart(2,'0')}${String(d.getUTCHours()).padStart(2,'0')}`;
-    windLayer = viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
-      url: `https://weathermaps.weatherapi.com/wind/tiles/${dh}/{z}/{x}/{y}.png`,
-      maximumLevel: 8
+    const key = `${d.getUTCFullYear()}${String(d.getUTCMonth()+1).padStart(2,'0')}${String(d.getUTCDate()).padStart(2,'0')}${String(d.getUTCHours()).padStart(2,'0')}`;
+    windL = viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
+      url: `https://weathermaps.weatherapi.com/wind/tiles/${key}/{z}/{x}/{y}.png`, maximumLevel:8
     }));
-    windLayer.alpha = 0.6;
-    toast('Wind-Overlay aktiv', 'success');
-  } else if (windLayer) {
-    viewer.imageryLayers.remove(windLayer);
-    windLayer = null;
-  }
-});
+    windL.alpha = 0.55;
+    toast('Wind aktiv');
+  } else if (windL) { viewer.imageryLayers.remove(windL); windL = null; }
+};
 
-// ========== SATELLITE TRACKING ==========
-const colors = ['#00d4ff', '#ff4d6d', '#2ee59d', '#ffc857', '#b794f4', '#f687b3'];
+/* ========== SATELLITES ========== */
+function addSatellite(name, tle1, tle2) {
+  if (sats[name]) return;
+  const satrec = satellite.twoline2satrec(tle1, tle2);
+  const color = colors[colorIdx++ % colors.length];
 
-function addEntity(name, lon, lat, alt = 400000, color = '#00d4ff') {
-  if (tracked[name]) {
-    tracked[name].position = Cesium.Cartesian3.fromDegrees(lon, lat, alt);
-    return;
-  }
   const entity = viewer.entities.add({
-    id: name,
-    name: name,
-    position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+    name,
+    position: Cesium.Cartesian3.fromDegrees(0,0,400000),
     point: {
-      pixelSize: 11,
+      pixelSize: 10,
       color: Cesium.Color.fromCssColorString(color),
       outlineColor: Cesium.Color.WHITE,
       outlineWidth: 2,
-      scaleByDistance: new Cesium.NearFarScalar(1e3, 1.4, 8e6, 0.6),
-      disableDepthTestDistance: Number.POSITIVE_INFINITY
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      scaleByDistance: new Cesium.NearFarScalar(1e5, 1.5, 1e7, 0.5)
     },
     label: {
       text: name,
-      font: '13px SF Pro Display, sans-serif',
+      font: '12px Inter, sans-serif',
       fillColor: Cesium.Color.WHITE,
       outlineColor: Cesium.Color.BLACK,
       outlineWidth: 3,
       style: Cesium.LabelStyle.FILL_AND_OUTLINE,
       verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-      pixelOffset: new Cesium.Cartesian2(0, -14),
-      scaleByDistance: new Cesium.NearFarScalar(1e3, 1, 6e6, 0.5),
-      disableDepthTestDistance: Number.POSITIVE_INFINITY
+      pixelOffset: new Cesium.Cartesian2(0, -12),
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      scaleByDistance: new Cesium.NearFarScalar(1e5, 1, 8e6, 0.4)
     }
   });
-  tracked[name] = entity;
-  updateSatList();
+
+  // simple orbit path (next 90 min)
+  const positions = [];
+  const now = new Date();
+  for (let i = 0; i < 90; i += 2) {
+    const t = new Date(now.getTime() + i * 60000);
+    const p = satellite.propagate(satrec, t);
+    if (p.position) {
+      const gmst = satellite.gstime(t);
+      const geo = satellite.eciToGeodetic(p.position, gmst);
+      positions.push(Cesium.Cartesian3.fromDegrees(
+        satellite.degreesLong(geo.longitude),
+        satellite.degreesLat(geo.latitude),
+        geo.height * 1000
+      ));
+    }
+  }
+  const path = viewer.entities.add({
+    polyline: {
+      positions,
+      width: 1.5,
+      material: Cesium.Color.fromCssColorString(color).withAlpha(0.45),
+      clampToGround: false
+    }
+  });
+
+  sats[name] = { satrec, entity, path, color };
+  renderList();
+  toast(name + ' hinzugefügt');
 }
 
 function removeSat(name) {
-  if (tracked[name]) {
-    viewer.entities.remove(tracked[name]);
-    delete tracked[name];
-    updateSatList();
-  }
+  if (!sats[name]) return;
+  viewer.entities.remove(sats[name].entity);
+  viewer.entities.remove(sats[name].path);
+  delete sats[name];
+  renderList();
 }
 
-function updateSatList() {
+function renderList() {
   const list = $('satList');
   list.innerHTML = '';
-  Object.keys(tracked).forEach(name => {
+  const keys = Object.keys(sats);
+  $('satCount').textContent = keys.length ? `(${keys.length})` : '';
+  keys.forEach(n => {
     const div = document.createElement('div');
-    div.className = 'sat-card';
-    div.innerHTML = `
-      <div class="sat-info">
-        <div class="name">${name}</div>
-        <div class="meta">Live Tracking</div>
-      </div>
-      <button class="sat-remove" data-name="${name}">×</button>`;
+    div.className = 'satRow';
+    div.innerHTML = `<div><div class="n" style="color:${sats[n].color}">${n}</div><div class="m">Live SGP4</div></div>
+                     <button data-n="${n}">×</button>`;
     list.appendChild(div);
   });
-  list.querySelectorAll('.sat-remove').forEach(btn => {
-    btn.onclick = () => removeSat(btn.dataset.name);
+  list.querySelectorAll('button').forEach(b => b.onclick = () => removeSat(b.dataset.n));
+}
+
+function updatePositions() {
+  const now = new Date();
+  Object.values(sats).forEach(s => {
+    try {
+      const p = satellite.propagate(s.satrec, now);
+      if (!p.position) return;
+      const gmst = satellite.gstime(now);
+      const geo = satellite.eciToGeodetic(p.position, gmst);
+      const lon = satellite.degreesLong(geo.longitude);
+      const lat = satellite.degreesLat(geo.latitude);
+      const alt = geo.height * 1000;
+      s.entity.position = Cesium.Cartesian3.fromDegrees(lon, lat, alt);
+    } catch {}
   });
 }
 
-// ISS Live
-async function updateISS() {
-  if (!$('chkISS').checked || !trackingOn) return;
+/* Load popular groups */
+async function loadGroup(group, filterFn, limit = 6) {
+  status('Lade TLE…');
   try {
-    const res = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
-    const d = await res.json();
-    addEntity('ISS (ZARYA)', d.longitude, d.latitude, d.altitude * 1000, '#00d4ff');
-  } catch {}
-}
-
-// Add more satellites via CelesTrak + rough propagation (simplified for performance)
-async function trackSatellite(query) {
-  const q = query.toLowerCase().trim();
-  setStatus('Lade TLE…');
-  try {
-    // Quick popular ones
-    const groups = {
-      iss: 'stations', hubble: 'stations', hst: 'stations',
-      tiangong: 'stations', css: 'stations', starlink: 'starlink'
-    };
-    let group = 'active';
-    for (const k of Object.keys(groups)) if (q.includes(k)) group = groups[k];
-
     const res = await fetch(`https://celestrak.org/NORAD/elements/gp.php?GROUP=${group}&FORMAT=tle`);
     const text = await res.text();
     const lines = text.trim().split(/\r?\n/);
-
-    let found = null;
-    for (let i = 0; i < lines.length; i += 3) {
+    let added = 0;
+    for (let i = 0; i < lines.length && added < limit; i += 3) {
       const name = lines[i].trim();
-      if (name.toUpperCase().includes(q.toUpperCase()) || 
-          (q === 'iss' && name.includes('ISS')) ||
-          (q === 'hubble' && name.includes('HST'))) {
-        found = name;
-        // Simple approximate position (we already have good ISS, for others we place a marker and let user know)
-        // For full SGP4 we would need satellite.js, but to keep it light we use a placeholder + real ISS
-        // Real solution: load satellite.js and propagate
-        break;
+      if (filterFn(name)) {
+        addSatellite(name, lines[i+1], lines[i+2]);
+        added++;
       }
     }
-
-    if (found) {
-      // For demo quality we currently prioritize perfect ISS + allow adding names
-      // Full SGP4 can be added, but ISS is the most important live one
-      toast(`${found} – für beste Genauigkeit aktuell ISS prioritisiert`, 'success');
-      setStatus('Tracking aktiv');
-    } else {
-      toast('Satellit nicht gefunden', 'error');
-    }
+    status('Bereit');
   } catch {
-    toast('TLE-Daten nicht erreichbar', 'error');
+    status('TLE Fehler');
+    toast('CelesTrak nicht erreichbar');
   }
-  setStatus('Bereit');
 }
 
-// Better: load satellite.js for real propagation of additional sats
-// (kept lightweight – ISS is real-time accurate)
-
-setInterval(updateISS, 2500);
-updateISS();
-
-// ========== SEARCH ==========
-let searchTimer;
-$('search').addEventListener('input', () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => doSearch($('search').value.trim()), 380);
+// Quick buttons
+document.querySelectorAll('[data-sat]').forEach(btn => {
+  btn.onclick = () => {
+    const t = btn.dataset.sat;
+    if (t === 'ISS') loadGroup('stations', n => n.includes('ISS') || n.includes('ZARYA'), 1);
+    else if (t === 'HST') loadGroup('stations', n => n.includes('HST'), 1);
+    else if (t === 'CSS') loadGroup('stations', n => n.includes('CSS') || n.includes('TIANHE'), 1);
+    else if (t === 'STARLINK') loadGroup('starlink', n => n.includes('STARLINK'), 8);
+    else if (t === 'NOAA') loadGroup('weather', n => n.includes('NOAA'), 4);
+  };
 });
-$('searchBtn').onclick = () => doSearch($('search').value.trim());
 
-async function doSearch(q) {
+// Start with ISS
+loadGroup('stations', n => n.includes('ISS') || n.includes('ZARYA'), 1);
+
+// Update loop
+setInterval(updatePositions, 1500);
+
+/* ========== SEARCH ========== */
+let st;
+$('search').oninput = () => {
+  clearTimeout(st);
+  st = setTimeout(() => search($('search').value.trim()), 350);
+};
+$('searchBtn').onclick = () => search($('search').value.trim());
+
+async function search(q) {
   if (q.length < 2) { $('suggestions').style.display = 'none'; return; }
+  const isSat = /iss|hubble|hst|starlink|tiangong|css|noaa|crew|dragon|zarya|nasa|spacex/i.test(q);
 
-  const isSat = /iss|hubble|starlink|tiangong|css|crew|dragon|nasa|spacex|zarya|hst/i.test(q);
-
-  const [places] = await Promise.all([
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`)
-      .then(r => r.json()).catch(() => [])
-  ]);
+  const places = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`)
+    .then(r => r.json()).catch(() => []);
 
   let html = '';
   if (isSat) {
-    html += `<div class="suggestion" data-type="sat" data-q="${q}">
-      <div class="title">🛰️ Satellit verfolgen: ${q}</div>
-      <div class="sub">Live-Position auf der Weltkugel anzeigen</div>
-    </div>`;
+    html += `<div class="sug" data-type="sat" data-q="${q}"><b>🛰️ ${q} verfolgen</b><span>Als Live-Satellit hinzufügen</span></div>`;
   }
   places.forEach(p => {
-    html += `<div class="suggestion" data-type="place" data-lon="${p.lon}" data-lat="${p.lat}">
-      <div class="title">${p.display_name.split(',')[0]}</div>
-      <div class="sub">${p.display_name}</div>
-    </div>`;
+    html += `<div class="sug" data-type="place" data-lon="${p.lon}" data-lat="${p.lat}">
+      <b>${p.display_name.split(',')[0]}</b><span>${p.display_name}</span></div>`;
   });
-  if (!html) html = `<div class="suggestion"><div class="title">Keine Ergebnisse</div></div>`;
+  if (!html) html = `<div class="sug"><b>Keine Treffer</b></div>`;
   $('suggestions').innerHTML = html;
   $('suggestions').style.display = 'block';
 
-  $('suggestions').querySelectorAll('.suggestion').forEach(el => {
+  $('suggestions').querySelectorAll('.sug').forEach(el => {
     el.onclick = () => {
       if (el.dataset.type === 'sat') {
-        trackSatellite(el.dataset.q);
-        if (el.dataset.q.toLowerCase().includes('iss')) updateISS();
+        const qq = el.dataset.q.toLowerCase();
+        if (qq.includes('iss')) loadGroup('stations', n => n.includes('ISS')||n.includes('ZARYA'), 1);
+        else if (qq.includes('hubble') || qq.includes('hst')) loadGroup('stations', n => n.includes('HST'), 1);
+        else if (qq.includes('tiangong') || qq.includes('css')) loadGroup('stations', n => n.includes('CSS')||n.includes('TIANHE'), 1);
+        else if (qq.includes('starlink')) loadGroup('starlink', n => n.includes('STARLINK'), 6);
+        else loadGroup('active', n => n.toUpperCase().includes(qq.toUpperCase()), 4);
       } else {
         viewer.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(+el.dataset.lon, +el.dataset.lat, 350000),
-          duration: 2.2
+          destination: Cesium.Cartesian3.fromDegrees(+el.dataset.lon, +el.dataset.lat, 280000),
+          duration: 2
         });
       }
       $('suggestions').style.display = 'none';
-      $('search').value = el.querySelector('.title').textContent;
     };
   });
 }
-
 document.addEventListener('click', e => {
-  if (!e.target.closest('.search-wrap')) $('suggestions').style.display = 'none';
+  if (!e.target.closest('.searchBox')) $('suggestions').style.display = 'none';
 });
 
-// ========== WEATHER ==========
-async function loadWeather() {
+/* ========== WEATHER + COORDS ========== */
+async function weather() {
   try {
-    const carto = viewer.camera.positionCartographic;
-    const lat = Cesium.Math.toDegrees(carto.latitude);
-    const lon = Cesium.Math.toDegrees(carto.longitude);
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&current=temperature_2m,wind_speed_10m,relative_humidity_2m&wind_speed_unit=kmh`);
-    const d = await res.json();
-    const c = d.current;
-    $('temp').textContent = Math.round(c.temperature_2m) + '°';
-    $('weatherSub').textContent = `Wind ${Math.round(c.wind_speed_10m)} km/h · ${c.relative_humidity_2m}%`;
+    const c = viewer.camera.positionCartographic;
+    const lat = Cesium.Math.toDegrees(c.latitude);
+    const lon = Cesium.Math.toDegrees(c.longitude);
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&current=temperature_2m,wind_speed_10m,relative_humidity_2m&wind_speed_unit=kmh`);
+    const d = await r.json();
+    $('temp').textContent = Math.round(d.current.temperature_2m) + '°';
+    $('wSub').textContent = `Wind ${Math.round(d.current.wind_speed_10m)} km/h · ${d.current.relative_humidity_2m}%`;
   } catch {
     $('temp').textContent = '–';
-    $('weatherSub').textContent = 'Wetter offline';
+    $('wSub').textContent = 'Offline';
   }
 }
 
-// ========== CAMERA + COORDS ==========
 viewer.camera.changed.addEventListener(() => {
   const c = viewer.camera.positionCartographic;
   $('lat').textContent = Cesium.Math.toDegrees(c.latitude).toFixed(3);
   $('lon').textContent = Cesium.Math.toDegrees(c.longitude).toFixed(3);
-  $('alt').textContent = (c.height / 1000).toFixed(0) + ' km';
+  $('alt').textContent = (c.height/1000).toFixed(0) + ' km';
 });
-setInterval(loadWeather, 60_000);
-loadWeather();
 
-// ========== CONTROLS ==========
-$('btnHome').onclick = () => viewer.camera.flyTo({
-  destination: Cesium.Cartesian3.fromDegrees(10, 25, 18000000),
-  duration: 2
-});
-$('btnZoomIn').onclick = () => viewer.camera.zoomIn(viewer.camera.positionCartographic.height * 0.3);
-$('btnZoomOut').onclick = () => viewer.camera.zoomOut(viewer.camera.positionCartographic.height * 0.4);
-$('btnFullscreen').onclick = () => {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-  else document.exitFullscreen();
-};
-$('btnLocate').onclick = () => {
-  navigator.geolocation.getCurrentPosition(pos => {
-    viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(pos.coords.longitude, pos.coords.latitude, 250000),
-      duration: 2
-    });
-    toast('Standort gefunden', 'success');
-  }, () => toast('Standort verweigert', 'error'));
+setInterval(weather, 45000);
+weather();
+status('Bereit');
+
+/* ========== CONTROLS ========== */
+$('home').onclick = () => viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(15, 28, 16500000), duration: 1.8 });
+$('zin').onclick = () => viewer.camera.zoomIn(viewer.camera.positionCartographic.height * 0.28);
+$('zout').onclick = () => viewer.camera.zoomOut(viewer.camera.positionCartographic.height * 0.35);
+$('fs').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+$('locate').onclick = () => {
+  navigator.geolocation.getCurrentPosition(p => {
+    viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(p.coords.longitude, p.coords.latitude, 220000), duration: 2 });
+    toast('Standort gefunden');
+  }, () => toast('Standort blockiert'));
 };
 
-$('closePanel').onclick = () => {
-  $('side-panel').classList.add('hidden');
-  $('toggle-panel').style.display = 'flex';
-};
-$('toggle-panel').onclick = () => {
-  $('side-panel').classList.remove('hidden');
-  $('toggle-panel').style.display = 'none';
-};
+$('closePanel').onclick = () => { $('panel').classList.add('hide'); $('openPanel').style.display = 'grid'; };
+$('openPanel').onclick = () => { $('panel').classList.remove('hide'); $('openPanel').style.display = 'none'; };
 
-$('chkTracking').onchange = e => trackingOn = e.target.checked;
-
-// Start
-setStatus('Bereit');
-if (window.innerWidth <= 720) {
-  $('side-panel').classList.add('hidden');
-  $('toggle-panel').style.display = 'flex';
+if (innerWidth < 700) {
+  $('panel').classList.add('hide');
+  $('openPanel').style.display = 'grid';
 }
 </script>
 </body>
